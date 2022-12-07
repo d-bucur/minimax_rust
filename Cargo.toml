@@ -9,6 +9,8 @@ readme = "README.md"
 
 [dependencies]
 bevy = { version = "0.9.1", features = ["dynamic"] }
+rand = "0.8.5"
+itertools = "0.10.5"
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]

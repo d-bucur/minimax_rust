@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use rand::seq::SliceRandom;
+
 use crate::game::*;
 
 pub trait MinimaxDriver {
@@ -9,7 +11,7 @@ pub trait MinimaxDriver {
 
     fn apply_move(&mut self, next_move: Move);
 
-    fn get_hash(&self); // TODO force implementation of Hash trait instead??
+    fn get_hash(&self); // TODO can't implement Hash because it is not object safe
 }
 
 #[derive(Default)]
@@ -17,10 +19,14 @@ pub struct DecisionTreeNode {
     pub score: i32,
     // board needed?
     pub moves: HashMap<Move, DecisionTreeNode>,
-    pub best_move: Move,
+    pub best_move: Option<Move>,
 }
 
-
-pub fn minimax(game: Box<&dyn MinimaxDriver>) -> DecisionTreeNode {
-    DecisionTreeNode { ..Default::default() }
+pub fn minimax(game: &dyn MinimaxDriver) -> DecisionTreeNode {
+    let possible_moves = game.get_possible_moves();
+    println!("Possible moves {:?}", possible_moves.len());
+    DecisionTreeNode {
+        best_move: possible_moves.choose(&mut rand::thread_rng()).cloned(),
+        ..Default::default()
+    }
 }

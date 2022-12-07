@@ -1,5 +1,7 @@
 use std::fmt::Debug;
 
+use itertools::iproduct;
+
 use crate::{game::*, minimax::*};
 
 #[derive(Debug)]
@@ -26,7 +28,10 @@ impl TicTacToeGame {
 
 impl Default for TicTacToeGame {
     fn default() -> Self {
-        Self { current_player: Player::X, board: [[Player::None; 3]; 3] }
+        Self {
+            current_player: Player::X,
+            board: [[Player::None; 3]; 3],
+        }
     }
 }
 
@@ -45,15 +50,14 @@ impl MinimaxDriver for TicTacToeGame {
     }
 
     fn get_possible_moves(&self) -> Vec<Move> {
-        (0..3)
-            .zip(0..3)
+        iproduct!(0..3, 0..3)
             .filter(|(x, y)| self.board[*x][*y] == Player::None)
             .collect()
     }
 
     fn apply_move(&mut self, next_move: Move) {
         self.board[next_move.0][next_move.1] = self.current_player;
-        self.current_player == self.current_player.next();
+        self.current_player = self.current_player.next();
         // TODO should return new board instead?
     }
 
