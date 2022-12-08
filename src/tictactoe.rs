@@ -1,10 +1,10 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, iter::repeat};
 
+use bevy::reflect::Tuple;
 use itertools::iproduct;
 
 use crate::{game::*, minimax::*};
 
-#[derive(Debug)]
 pub struct TicTacToeGame {
     pub current_player: Player,
     pub board: [[Player; 3]; 3],
@@ -37,9 +37,8 @@ impl Default for TicTacToeGame {
 
 impl MinimaxDriver for TicTacToeGame {
     fn get_winner(&self) -> Player {
-        let win_positions = [[(0usize, 0usize), (0usize, 1usize), (0usize, 2usize)]]; // TODO add all positions
-        for pos in win_positions {
-            let score: i32 = pos.iter().map(|(x, y)| self._score(*x, *y)).sum();
+        for pos in win_positions_to_check() {
+            let score: i32 = pos.map(|(x, y)| self._score(x, y)).sum();
             if score == 3 {
                 return Player::X;
             } else if score == -3 {
@@ -57,11 +56,48 @@ impl MinimaxDriver for TicTacToeGame {
 
     fn apply_move(&mut self, next_move: Move) {
         self.board[next_move.0][next_move.1] = self.current_player;
-        self.current_player = self.current_player.next();
+        self.current_player = if self.get_winner() == Player::None {
+            // TODO should cache winner to avoid computing 2 times
+            self.current_player.next()
+        } else {
+            Player::None
+        }
         // TODO should return new board instead?
     }
 
     fn get_hash(&self) {
         todo!()
     }
+}
+
+impl Debug for TicTacToeGame {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for row in &self.board {
+            for &cell in row {
+                write!(f, "{} ", String::from(cell));
+            }
+            writeln!(f);
+        }
+        write!(f, "next: {:?}", &self.current_player)
+    }
+}
+
+impl From<Player> for String {
+    fn from(player: Player) -> Self {
+        match player {
+            Player::X => "X",
+            Player::O => "O",
+            Player::None => ".",
+        }
+        .into()
+    }
+}
+
+fn win_positions_to_check() -> impl Iterator<Item = impl Iterator<Item = (usize, usize)>> {
+    let horizontal = (0..3).map(|y| [0, 1, 2].into_iter().zip([y, y, y])); // not sure if actually allocates arrays here, need to profile or preallocate arrays
+    let vertical = (0..3).map(|x| [x, x, x].into_iter().zip([0, 1, 2]));
+    // some weird iterators here needed to have the same type and be able to chain
+    let diagonal1 = (0..1).map(|_| [0, 1, 2].into_iter().zip([0, 1, 2]));
+    let diagonal2 = (0..1).map(|_| [0, 1, 2].into_iter().zip([2, 1, 0]));
+    horizontal.chain(vertical).chain(diagonal1).chain(diagonal2)
 }

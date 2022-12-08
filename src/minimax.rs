@@ -23,6 +23,7 @@ pub struct DecisionTreeNode {
 }
 
 pub fn minimax(game: &dyn MinimaxDriver) -> DecisionTreeNode {
+    // TODO actual implementation
     let possible_moves = game.get_possible_moves();
     println!("Possible moves {:?}", possible_moves.len());
     DecisionTreeNode {

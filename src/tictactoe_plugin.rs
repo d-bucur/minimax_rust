@@ -1,6 +1,6 @@
-use bevy::{prelude::*, ecs::schedule::ShouldRun};
+use bevy::{ecs::schedule::ShouldRun, prelude::*};
 
-use crate::{minimax::*, tictactoe::TicTacToeGame, game::*};
+use crate::{game::*, minimax::*, tictactoe::TicTacToeGame};
 
 pub struct TicTacToeGamePlugin;
 
@@ -23,6 +23,7 @@ struct GameStateChangedEvent;
 
 // SYSTEMS
 fn render_game(
+    // TODO can probably listen for bevy changed events instead of generating own
     mut state_changed_event: EventReader<GameStateChangedEvent>,
     game: Res<GameResource>,
 ) {
@@ -39,15 +40,21 @@ fn make_move(
     println!("Best move: {:?}", best_move);
     if let Some(best_move) = best_move {
         game.0.apply_move(best_move);
-        state_changed_event.send(GameStateChangedEvent);
+        let winner = game.0.get_winner();
+        if winner == Player::None {
+            state_changed_event.send(GameStateChangedEvent);
+        } else {
+            println!("{:?}", game.0);
+            println!("{:?} won", winner);
+        }
     }
 }
 
 fn should_move(mut state_changed_event: EventReader<GameStateChangedEvent>) -> ShouldRun {
     for _ in state_changed_event.iter() {
-        return ShouldRun::Yes 
+        return ShouldRun::Yes;
     }
-    return ShouldRun::No
+    return ShouldRun::No;
 }
 
 fn setup(mut state_changed_event: EventWriter<GameStateChangedEvent>) {
