@@ -1,7 +1,5 @@
-use std::{fmt::Debug, iter::repeat};
-
-use bevy::reflect::Tuple;
 use itertools::iproduct;
+use std::fmt::Debug;
 
 use crate::{game::*, minimax::*};
 
@@ -11,14 +9,8 @@ pub struct TicTacToeGame {
 }
 
 impl TicTacToeGame {
-    fn new() -> Self {
-        Self {
-            current_player: Player::X,
-            ..Default::default()
-        }
-    }
-    fn _score(&self, x: usize, y: usize) -> i32 {
-        match self.board[x][y] {
+    fn _score(&self, i: usize, j: usize) -> i32 {
+        match self.board[i][j] {
             Player::X => 1,
             Player::O => -1,
             Player::None => 0,
@@ -38,7 +30,7 @@ impl Default for TicTacToeGame {
 impl MinimaxDriver for TicTacToeGame {
     fn get_winner(&self) -> Player {
         for pos in win_positions_to_check() {
-            let score: i32 = pos.map(|(x, y)| self._score(x, y)).sum();
+            let score: i32 = pos.map(|(i, j)| self._score(i, j)).sum();
             if score == 3 {
                 return Player::X;
             } else if score == -3 {
@@ -50,7 +42,7 @@ impl MinimaxDriver for TicTacToeGame {
 
     fn get_possible_moves(&self) -> Vec<Move> {
         iproduct!(0..3, 0..3)
-            .filter(|(x, y)| self.board[*x][*y] == Player::None)
+            .filter(|(i, j)| self.board[*i][*j] == Player::None)
             .collect()
     }
 
@@ -82,22 +74,20 @@ impl Debug for TicTacToeGame {
     }
 }
 
-impl From<Player> for String {
-    fn from(player: Player) -> Self {
-        match player {
-            Player::X => "X",
-            Player::O => "O",
-            Player::None => ".",
-        }
-        .into()
-    }
-}
-
 fn win_positions_to_check() -> impl Iterator<Item = impl Iterator<Item = (usize, usize)>> {
-    let horizontal = (0..3).map(|y| [0, 1, 2].into_iter().zip([y, y, y])); // not sure if actually allocates arrays here, need to profile or preallocate arrays
-    let vertical = (0..3).map(|x| [x, x, x].into_iter().zip([0, 1, 2]));
-    // some weird iterators here needed to have the same type and be able to chain
+     // not sure if actually allocates arrays here, should profile or preallocate arrays
+     // some weird iterators here needed to have the same type and be able to chain
+    let horizontal = (0..3).map(|j| [0, 1, 2].into_iter().zip([j, j, j]));
+    let vertical = (0..3).map(|i| [i, i, i].into_iter().zip([0, 1, 2]));
     let diagonal1 = (0..1).map(|_| [0, 1, 2].into_iter().zip([0, 1, 2]));
     let diagonal2 = (0..1).map(|_| [0, 1, 2].into_iter().zip([2, 1, 0]));
     horizontal.chain(vertical).chain(diagonal1).chain(diagonal2)
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_winner() {
+        !todo!()
+    }
 }

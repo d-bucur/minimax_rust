@@ -4,3 +4,9 @@
 - Frontend using Bevy
 - Unit testing for game rules and minimax solutions
 - Performance focused: implement benchmarks to measure performance gains (criterion + iai + CI)
+- secondary frontend: export to wasm and hook up to javascript game
+
+# Steps
+- minimax base
+- alfa beta pruning
+- monte carlo tree search?

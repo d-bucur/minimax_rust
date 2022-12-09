@@ -5,6 +5,17 @@ pub enum Player {
     None,
 }
 
+impl From<Player> for String {
+    fn from(player: Player) -> Self {
+        match player {
+            Player::X => "X",
+            Player::O => "O",
+            Player::None => ".",
+        }
+        .into()
+    }
+}
+
 impl Player {
     pub fn next(&self) -> Player {
         match self {

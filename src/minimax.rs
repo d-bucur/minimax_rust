@@ -7,9 +7,9 @@ use crate::game::*;
 pub trait MinimaxDriver {
     fn get_winner(&self) -> Player;
 
-    fn get_possible_moves(&self) -> Vec<Move>;
+    fn get_possible_moves(&self) -> Vec<Move>; // TODO iterator instead?
 
-    fn apply_move(&mut self, next_move: Move);
+    fn apply_move(&mut self, next_move: Move); // TODO move types should be specific for each game
 
     fn get_hash(&self); // TODO can't implement Hash because it is not object safe
 }
