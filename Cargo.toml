@@ -11,6 +11,7 @@ readme = "README.md"
 bevy = { version = "0.9.1", features = ["dynamic"] }
 rand = "0.8.5"
 itertools = "0.10.5"
+rstest = "0.16.0"
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]

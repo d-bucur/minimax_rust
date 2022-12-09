@@ -9,6 +9,17 @@ pub struct TicTacToeGame {
 }
 
 impl TicTacToeGame {
+    /// Does not validate if the state is correct or reachable (ie might have board filled with X)
+    fn from_state(board_str: &str, current_player: Player) -> Self {
+        let mut game = TicTacToeGame::default();
+        game.current_player = current_player;
+        let board_chars = board_str.chars().filter(|c| !c.is_whitespace());
+        iproduct!(0..3, 0..3)
+            .zip(board_chars)
+            .for_each(|((i, j), c)| game.board[i][j] = Player::from(c));
+        return game;
+    }
+
     fn _score(&self, i: usize, j: usize) -> i32 {
         match self.board[i][j] {
             Player::X => 1,
@@ -75,8 +86,8 @@ impl Debug for TicTacToeGame {
 }
 
 fn win_positions_to_check() -> impl Iterator<Item = impl Iterator<Item = (usize, usize)>> {
-     // not sure if actually allocates arrays here, should profile or preallocate arrays
-     // some weird iterators here needed to have the same type and be able to chain
+    // not sure if actually allocates arrays here, should profile or preallocate arrays
+    // some weird iterators here needed to have the same type and be able to chain
     let horizontal = (0..3).map(|j| [0, 1, 2].into_iter().zip([j, j, j]));
     let vertical = (0..3).map(|i| [i, i, i].into_iter().zip([0, 1, 2]));
     let diagonal1 = (0..1).map(|_| [0, 1, 2].into_iter().zip([0, 1, 2]));
@@ -86,8 +97,49 @@ fn win_positions_to_check() -> impl Iterator<Item = impl Iterator<Item = (usize,
 
 #[cfg(test)]
 mod tests {
+    use rstest::*;
+    use super::*;
+
+    #[rstest]
+    #[case(
+        "XXX
+        O.O
+        ..."
+    )]
+    #[case(
+        "
+        X.X
+        OXO
+        X.."
+    )]
+    #[case(
+        "
+        X.X
+        OXO
+        ..X"
+    )]
+    #[case(
+        "
+        OXO
+        OXO
+        .XX"
+    )]
+    fn test_winner(#[case] board_str: &str) {
+        let game = TicTacToeGame::from_state(board_str, crate::game::Player::O);
+        assert_eq!(game.get_winner(), Player::X);
+    }
+
     #[test]
-    fn test_winner() {
-        !todo!()
+    fn test_get_possible_moves() {
+        let state = "
+        X.X
+        O.O
+        X.O";
+        let game = TicTacToeGame::from_state(state, Player::X);
+        let mut actual = game.get_possible_moves();
+        let mut expected = vec![(0,1), (1,1), (2,1)];
+        actual.sort();
+        expected.sort();
+        assert_eq!(actual, expected);
     }
 }
