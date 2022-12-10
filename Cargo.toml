@@ -22,7 +22,7 @@ criterion = "0.4.0"
 name = "minimax_bench"
 harness = false
 
-# TODO compile times for different targets are getting ridiculous. split into multiple workspaces
+# TODO compile times for different profiles are getting ridiculous. split into multiple workspaces
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]
