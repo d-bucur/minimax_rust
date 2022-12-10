@@ -11,7 +11,16 @@ readme = "README.md"
 bevy = { version = "0.9.1", features = ["dynamic"] }
 rand = "0.8.5"
 itertools = "0.10.5"
+
+[dev-dependencies]
 rstest = "0.16.0"
+criterion = "0.4.0"
+
+[[bench]]
+name = "minimax_bench"
+harness = false
+
+# TODO compile times for different targets are getting ridiculous. split into multiple workspaces
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]
@@ -20,6 +29,3 @@ opt-level = 1
 # Enable high optimizations for dependencies (incl. Bevy), but not for our code:
 [profile.dev.package."*"]
 opt-level = 3
-
-[target.x86_64-pc-windows-msvc]
-linker = "rust-lld.exe"

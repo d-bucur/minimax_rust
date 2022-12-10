@@ -1,6 +1,6 @@
 use bevy::{ecs::schedule::ShouldRun, prelude::*};
 
-use crate::{connect4::Connect4Game, game::*, minimax::*, tictactoe::TicTacToeGame};
+use minimax::{connect4::Connect4Game, game::*, minimax::*, tictactoe::TicTacToeGame};
 
 pub struct TicTacToeGamePlugin;
 
@@ -18,7 +18,7 @@ impl Plugin for TicTacToeGamePlugin {
 #[derive(Resource, Default)]
 // For now just changing between the two games here.
 // Tried generic solution but is pretty messy wih systems
-struct GameResource(Connect4Game);
+struct GameResource(TicTacToeGame);
 
 // EVENTS
 struct GameStateChangedEvent;
@@ -29,7 +29,7 @@ fn render_game(
     mut state_changed_event: EventReader<GameStateChangedEvent>,
     game: Res<GameResource>,
 ) {
-    for event in state_changed_event.iter() {
+    for _ in state_changed_event.iter() {
         println!("{:?}", game.0)
     }
 }

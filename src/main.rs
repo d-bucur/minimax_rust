@@ -1,9 +1,5 @@
 use bevy::prelude::*;
 
-mod connect4;
-mod game;
-mod minimax;
-mod tictactoe;
 mod tictactoe_plugin;
 
 // TODO connect other states and plugins

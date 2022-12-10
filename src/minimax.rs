@@ -22,6 +22,12 @@ pub struct DecisionTreeNode {
     pub best_move: Option<Move>,
 }
 
+impl DecisionTreeNode {
+    pub fn get_best_move(&self) -> Move {
+        return (0, 0)
+    }
+}
+
 pub fn minimax(game: &dyn MinimaxDriver) -> DecisionTreeNode {
     // TODO actual implementation
     let possible_moves = game.get_possible_moves();

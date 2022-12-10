@@ -187,4 +187,6 @@ mod tests {
         println!("{:?}", game);
         assert_eq!(game.get_winner(), Player::X);
     }
+
+    // TODO test possible moves
 }

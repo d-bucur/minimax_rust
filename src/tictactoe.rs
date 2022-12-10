@@ -10,7 +10,7 @@ pub struct TicTacToeGame {
 
 impl TicTacToeGame {
     /// Does not validate if the state is correct or reachable (ie might have board filled with X)
-    fn from_state(board_str: &str, current_player: Player) -> Self {
+    pub fn from_state(board_str: &str, current_player: Player) -> Self {
         let mut game = TicTacToeGame::default();
         game.current_player = current_player;
         let board_chars = board_str.chars().filter(|c| !c.is_whitespace());
@@ -141,5 +141,20 @@ mod tests {
         actual.sort();
         expected.sort();
         assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_winning_moves_one_turn() {
+        let state = "
+        X.X
+        X.O
+        O.O";
+        let game = TicTacToeGame::from_state(state, Player::X);
+        let node = minimax(&game);
+        assert_eq!((0, 1), node.get_best_move());
+
+        let game = TicTacToeGame::from_state(state, Player::O);
+        let node = minimax(&game);
+        assert_eq!((2, 1), node.get_best_move());
     }
 }
