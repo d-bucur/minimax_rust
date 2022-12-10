@@ -4,4 +4,8 @@ members = [
     "game_frontend"
 ]
 
+default-members = [
+    "minimax"
+]
+
 resolver = "2" # Important! wgpu/Bevy needs this!

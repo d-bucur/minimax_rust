@@ -97,8 +97,8 @@ fn win_positions_to_check() -> impl Iterator<Item = impl Iterator<Item = (usize,
 
 #[cfg(test)]
 mod tests {
-    use rstest::*;
     use super::*;
+    use rstest::*;
 
     #[rstest]
     #[case(
@@ -137,7 +137,7 @@ mod tests {
         X.O";
         let game = TicTacToeGame::from_state(state, Player::X);
         let mut actual = game.get_possible_moves();
-        let mut expected = vec![(0,1), (1,1), (2,1)];
+        let mut expected = vec![(0, 1), (1, 1), (2, 1)];
         actual.sort();
         expected.sort();
         assert_eq!(actual, expected);

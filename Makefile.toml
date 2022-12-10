@@ -1,0 +1,11 @@
+# cargo-make tasks
+[env]
+CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
+
+[tasks.run-game]
+command = "cargo"
+args = ["run", "-p", "game_frontend"]
+
+[tasks.test]
+command = "cargo"
+args = ["test", "-p", "minimax"]

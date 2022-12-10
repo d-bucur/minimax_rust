@@ -25,7 +25,7 @@ pub struct DecisionTreeNode {
 
 impl DecisionTreeNode {
     pub fn get_best_move(&self) -> Move {
-        return (0, 0)
+        return (0, 0);
     }
 }
 
@@ -33,15 +33,19 @@ pub fn minimax(game: &dyn MinimaxDriver) -> DecisionTreeNode {
     // TODO actual implementation
     let winner = game.get_winner();
     match winner {
-        Player::X => return DecisionTreeNode {
-            score: 100,
-            ..Default::default()
-        },
-        Player::O => return DecisionTreeNode {
-            score: -100,
-            ..Default::default()
-        },
-        _ => ()
+        Player::X => {
+            return DecisionTreeNode {
+                score: 100,
+                ..Default::default()
+            }
+        }
+        Player::O => {
+            return DecisionTreeNode {
+                score: -100,
+                ..Default::default()
+            }
+        }
+        _ => (),
     }
     let possible_moves = game.get_possible_moves();
     warn!("Possible moves {:?}", possible_moves.len());
