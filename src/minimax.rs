@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use rand::seq::SliceRandom;
+use tracing::*;
 
 use crate::game::*;
 
@@ -31,7 +32,7 @@ impl DecisionTreeNode {
 pub fn minimax(game: &dyn MinimaxDriver) -> DecisionTreeNode {
     // TODO actual implementation
     let possible_moves = game.get_possible_moves();
-    println!("Possible moves {:?}", possible_moves.len());
+    warn!("Possible moves {:?}", possible_moves.len());
     DecisionTreeNode {
         best_move: possible_moves.choose(&mut rand::thread_rng()).cloned(),
         ..Default::default()

@@ -157,4 +157,14 @@ mod tests {
         let node = minimax(&game);
         assert_eq!((2, 1), node.get_best_move());
     }
+
+    #[test]
+    fn test_game_is_not_winnable() {
+        let state = "
+        ...
+        ...
+        ...";
+        let game = TicTacToeGame::from_state(state, Player::X);
+        todo!();
+    }
 }

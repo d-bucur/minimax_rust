@@ -2188,6 +2188,8 @@ dependencies = [
  "itertools",
  "rand",
  "rstest",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
