@@ -117,6 +117,11 @@ impl MinimaxDriver for Connect4Game {
     fn get_current_player(&self) -> Player {
         self.current_player
     }
+
+    fn has_ended(&self) -> bool {
+        // TODO very inefficient
+        self.get_winner() != Player::None && self.get_possible_moves().len() == 0
+    }
 }
 
 impl Debug for Connect4Game {

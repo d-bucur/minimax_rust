@@ -78,6 +78,11 @@ impl MinimaxDriver for TicTacToeGame {
     fn get_current_player(&self) -> Player {
         self.current_player
     }
+
+    fn has_ended(&self) -> bool {
+        // TODO very inefficient
+        self.get_winner() != Player::None && self.get_possible_moves().len() == 0
+    }
 }
 
 impl Debug for TicTacToeGame {
@@ -152,28 +157,53 @@ mod tests {
     }
 
     #[rstest]
-    fn test_winning_moves_one_turn(log_collector: ()) {
+    fn test_winning_moves_one_turn() {
         let state = "
         X.X
         X.O
         O.O";
         let game = TicTacToeGame::from_state(state, Player::X);
-        let node = minimax(&game);
+        let node = minimax(&game, None);
         assert!([Some((0, 1)), Some((1, 1))].contains(&node.get_best_move()));
 
         let game = TicTacToeGame::from_state(state, Player::O);
-        let node = minimax(&game);
+        let node = minimax(&game, None);
         assert_eq!(Some((2, 1)), node.get_best_move());
     }
 
+    #[rstest]
+    fn test_winning_moves_two_turns() {
+        let state = "
+        ...
+        OXX
+        ..O";
+        let mut game =
+            Box::new(TicTacToeGame::from_state(state, Player::O)) as Box<dyn MinimaxDriver>;
+        let mut decision_node = minimax(&*game, None);
+        let mut moves = 0;
+        while decision_node.best_move.is_some() {
+            let next_move = decision_node.best_move.unwrap();
+            game = game.apply_move(next_move);
+            decision_node = decision_node.moves.remove(&next_move).unwrap();
+            moves += 1;
+        }
+        assert_eq!(moves, 3);
+        assert_eq!(game.get_winner(), Player::O);
+    }
+
     #[test]
-    fn test_game_is_not_winnable() {
+    fn test_best_moves_always_end_in_draw() {
         let state = "
         ...
         ...
         ...";
         let game = TicTacToeGame::from_state(state, Player::X);
-        todo!();
+        let node = minimax(&game, None);
+        let mut game_state = Box::new(game) as Box<dyn MinimaxDriver>;
+        while !game_state.has_ended() {
+            game_state = game_state.apply_move(node.best_move.unwrap());
+        }
+        assert!(game_state.get_winner() == Player::None);
     }
 
     #[fixture]

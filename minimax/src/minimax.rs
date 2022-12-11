@@ -14,6 +14,8 @@ pub trait MinimaxDriver: core::fmt::Debug {
     fn get_hash(&self); // TODO can't implement Hash because it is not object safe
 
     fn get_current_player(&self) -> Player;
+
+    fn has_ended(&self) -> bool;
 }
 
 #[derive(Default)]
@@ -30,7 +32,12 @@ impl DecisionTreeNode {
     }
 }
 
-pub fn minimax(game: &dyn MinimaxDriver) -> DecisionTreeNode {
+pub fn minimax(game: &dyn MinimaxDriver, max_depth: Option<u32>) -> DecisionTreeNode {
+    if max_depth.unwrap_or(100) <= 0 {
+        return DecisionTreeNode {
+            ..Default::default()
+        };
+    }
     let winner = game.get_winner();
     let score_multiplier = match winner {
         Player::X => 1,
@@ -47,8 +54,7 @@ pub fn minimax(game: &dyn MinimaxDriver) -> DecisionTreeNode {
 
     let possible_moves = game.get_possible_moves();
     let new_states = possible_moves.iter().map(|&m| (m, game.apply_move(m)));
-    let child_results = new_states.map(|(m, g)| (m, minimax(g.as_ref())));
-
+    let child_results = new_states.map(|(m, g)| (m, minimax(g.as_ref(), max_depth.map(|s| s - 1))));
     let child_results_map: HashMap<(usize, usize), DecisionTreeNode> = child_results.collect();
 
     // this is where the actual minmax happens!

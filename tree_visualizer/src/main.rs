@@ -13,11 +13,11 @@ use minimax::{
 fn main() -> std::io::Result<()> {
     // get the decision tree
     let state = "
-        X.X
-        OO.
-        X.O";
+        ...
+        OXX
+        ..O";
     let game = minimax::tictactoe::TicTacToeGame::from_state(state, Player::O);
-    let decision_tree = minimax(&game);
+    let decision_tree = minimax(&game, None);
 
     // build the graph
     let mut graph = make_graph();
@@ -25,7 +25,7 @@ fn main() -> std::io::Result<()> {
 
     // print it
     let mut printer_context = PrinterContext::default();
-    println!("{}", graph.print(&mut printer_context));
+    // println!("{}", graph.print(&mut printer_context));
     let graph_svg = graphviz_rust::exec(
         graph,
         &mut printer_context,
@@ -43,7 +43,7 @@ fn graph_tree(
     decision_tree: minimax::minimax::DecisionTreeNode,
     game: Box<dyn MinimaxDriver>,
 ) {
-    graph_node(graph, decision_tree, game, 0, &mut 0);
+    graph_node(graph, decision_tree, game, 0, &mut 0, false);
 }
 
 fn graph_node(
@@ -52,34 +52,50 @@ fn graph_node(
     game: Box<dyn MinimaxDriver>,
     depth: i32,
     node_id: &mut i32,
-) -> NodeId {
-    let color_node = match game.get_winner() {
-        Player::X => "red",
-        Player::O => "blue",
-        Player::None => "black",
+    empty_score_visible: bool,
+) -> Option<NodeId> {
+    if !empty_score_visible && decision_tree.score == 0 {
+        return None;
     }
-    .to_string();
+    let color_node = get_player_color(game.get_winner());
     let current_node = add_node(
         graph,
         format!("node_{}_{}", depth, node_id),
         format!("s: {}\n{:?}", decision_tree.score, game),
-        color_node,
+        color_node.into(),
     );
 
     let best_move = decision_tree.best_move;
     for (m, tree_node) in decision_tree.moves {
         let new_game = game.apply_move(m);
-        let child_node = graph_node(graph, tree_node, new_game, depth + 1, node_id);
+        let child_node = graph_node(
+            graph,
+            tree_node,
+            new_game,
+            depth + 1,
+            node_id,
+            empty_score_visible,
+        );
         let color_edge = if best_move.unwrap() == m {
-            "red"
+            get_player_color(game.get_current_player())
         } else {
             "black"
         }
         .to_string();
-        add_edge(graph, current_node.clone(), child_node, color_edge);
+        if let Some(child) = child_node {
+            add_edge(graph, current_node.clone(), child, color_edge);
+        }
         *node_id += 1;
     }
-    current_node
+    Some(current_node)
+}
+
+fn get_player_color(player: Player) -> &'static str {
+    match player {
+        Player::X => "red",
+        Player::O => "blue",
+        Player::None => "black",
+    }
 }
 
 fn make_graph() -> Graph {

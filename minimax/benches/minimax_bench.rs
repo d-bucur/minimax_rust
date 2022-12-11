@@ -9,7 +9,7 @@ fn tictactoe_benchmark(c: &mut Criterion) {
         ...
         ...";
             let game = TicTacToeGame::from_state(board_str, Player::X);
-            minimax(black_box(&game));
+            minimax(black_box(&game), None);
         })
     });
     c.bench_function("tictactoe_full_game", |b| {
@@ -19,8 +19,7 @@ fn tictactoe_benchmark(c: &mut Criterion) {
         ...
         ...";
             let game = TicTacToeGame::from_state(board_str, Player::X);
-            minimax(black_box(&game));
-            todo!();
+            minimax(black_box(&game), None);
         })
     });
 }
