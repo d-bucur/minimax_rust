@@ -1,7 +1,8 @@
 [workspace]
 members = [
     "minimax",
-    "game_frontend"
+    "game_frontend",
+    "tree_visualizer"
 ]
 
 default-members = [
