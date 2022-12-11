@@ -98,7 +98,8 @@ impl MinimaxDriver for Connect4Game {
             .collect()
     }
 
-    fn apply_move(&mut self, next_move: Move) {
+    fn apply_move(&self, next_move: Move) -> Box<dyn MinimaxDriver> {
+        todo!();
         self.board[next_move.0][next_move.1] = self.current_player;
         self.current_player = if self.get_winner() == Player::None {
             // TODO should cache winner to avoid computing 2 times
@@ -106,7 +107,7 @@ impl MinimaxDriver for Connect4Game {
         } else {
             Player::None
         };
-        self.last_move = Some(next_move)
+        self.last_move = Some(next_move);
     }
 
     fn get_hash(&self) {

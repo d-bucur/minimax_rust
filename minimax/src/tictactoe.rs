@@ -3,9 +3,10 @@ use std::fmt::Debug;
 
 use crate::{game::*, minimax::*};
 
+#[derive(Clone)]
 pub struct TicTacToeGame {
     pub current_player: Player,
-    pub board: [[Player; 3]; 3],
+    pub board: [[Player; 3]; 3], // TODO optimize into array
 }
 
 impl TicTacToeGame {
@@ -57,15 +58,17 @@ impl MinimaxDriver for TicTacToeGame {
             .collect()
     }
 
-    fn apply_move(&mut self, next_move: Move) {
-        self.board[next_move.0][next_move.1] = self.current_player;
-        self.current_player = if self.get_winner() == Player::None {
+    fn apply_move(&self, next_move: Move) -> Box<dyn MinimaxDriver> {
+        let mut new_game = Box::new(self.clone());
+        new_game.board[next_move.0][next_move.1] = self.current_player;
+
+        new_game.current_player = if new_game.get_winner() == Player::None {
             // TODO should cache winner to avoid computing 2 times
             self.current_player.next()
         } else {
             Player::None
-        }
-        // TODO should return new board instead?
+        };
+        return new_game;
     }
 
     fn get_hash(&self) {
@@ -143,19 +146,31 @@ mod tests {
         assert_eq!(actual, expected);
     }
 
-    #[test]
-    fn test_winning_moves_one_turn() {
+    #[rstest]
+    fn test_logging(log_collector: ()) {
+        // TODO remove
+        let state = "
+        O.X
+        X..
+        XOO";
+        let game = TicTacToeGame::from_state(state, Player::X);
+        let node = minimax(&game);
+        assert_eq!(Some((0, 1)), node.get_best_move());
+    }
+
+    #[rstest]
+    fn test_winning_moves_one_turn(log_collector: ()) {
         let state = "
         X.X
         X.O
         O.O";
         let game = TicTacToeGame::from_state(state, Player::X);
         let node = minimax(&game);
-        assert_eq!((0, 1), node.get_best_move());
+        assert!([Some((0, 1)), Some((1,1))].contains(&node.get_best_move()));
 
         let game = TicTacToeGame::from_state(state, Player::O);
         let node = minimax(&game);
-        assert_eq!((2, 1), node.get_best_move());
+        assert_eq!(Some((2, 1)), node.get_best_move());
     }
 
     #[test]
@@ -166,5 +181,14 @@ mod tests {
         ...";
         let game = TicTacToeGame::from_state(state, Player::X);
         todo!();
+    }
+
+    #[fixture]
+    fn log_collector() {
+        // kind of hacky way to enable logs in tests
+        let collector = tracing_subscriber::fmt()
+            .with_max_level(tracing::Level::TRACE)
+            .finish();
+        tracing::subscriber::set_global_default(collector);
     }
 }
