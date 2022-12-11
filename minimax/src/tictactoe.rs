@@ -74,6 +74,10 @@ impl MinimaxDriver for TicTacToeGame {
     fn get_hash(&self) {
         todo!()
     }
+
+    fn get_current_player(&self) -> Player {
+        self.current_player
+    }
 }
 
 impl Debug for TicTacToeGame {
@@ -105,7 +109,8 @@ mod tests {
 
     #[rstest]
     #[case(
-        "XXX
+        "
+        XXX
         O.O
         ..."
     )]
@@ -127,7 +132,7 @@ mod tests {
         OXO
         .XX"
     )]
-    fn test_winner(#[case] board_str: &str) {
+    fn test_winner_is_detected(#[case] board_str: &str) {
         let game = TicTacToeGame::from_state(board_str, crate::game::Player::O);
         assert_eq!(game.get_winner(), Player::X);
     }
@@ -147,18 +152,6 @@ mod tests {
     }
 
     #[rstest]
-    fn test_logging(log_collector: ()) {
-        // TODO remove
-        let state = "
-        O.X
-        X..
-        XOO";
-        let game = TicTacToeGame::from_state(state, Player::X);
-        let node = minimax(&game);
-        assert_eq!(Some((0, 1)), node.get_best_move());
-    }
-
-    #[rstest]
     fn test_winning_moves_one_turn(log_collector: ()) {
         let state = "
         X.X
@@ -166,7 +159,7 @@ mod tests {
         O.O";
         let game = TicTacToeGame::from_state(state, Player::X);
         let node = minimax(&game);
-        assert!([Some((0, 1)), Some((1,1))].contains(&node.get_best_move()));
+        assert!([Some((0, 1)), Some((1, 1))].contains(&node.get_best_move()));
 
         let game = TicTacToeGame::from_state(state, Player::O);
         let node = minimax(&game);

@@ -19,8 +19,8 @@ impl From<Player> for String {
 impl From<char> for Player {
     fn from(c: char) -> Self {
         match c {
-            'X' => Player::X,
-            'O' => Player::O,
+            'X' | 'x' => Player::X,
+            'O' | 'o' | '0' => Player::O,
             '.' => Player::None,
             _ => panic!(),
         }

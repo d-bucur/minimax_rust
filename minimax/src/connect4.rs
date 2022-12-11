@@ -113,6 +113,10 @@ impl MinimaxDriver for Connect4Game {
     fn get_hash(&self) {
         todo!()
     }
+
+    fn get_current_player(&self) -> Player {
+        self.current_player
+    }
 }
 
 impl Debug for Connect4Game {
@@ -123,7 +127,7 @@ impl Debug for Connect4Game {
             }
             writeln!(f);
         }
-        write!(f, "next: {:?}", &self.current_player)
+        write!(f, "current_player: {:?}", &self.current_player)
     }
 }
 

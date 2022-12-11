@@ -12,6 +12,8 @@ pub trait MinimaxDriver: core::fmt::Debug {
     fn apply_move(&self, next_move: Move) -> Box<dyn MinimaxDriver>; // TODO move types should be specific for each game
 
     fn get_hash(&self); // TODO can't implement Hash because it is not object safe
+
+    fn get_current_player(&self) -> Player;
 }
 
 #[derive(Default)]
@@ -24,33 +26,43 @@ pub struct DecisionTreeNode {
 
 impl DecisionTreeNode {
     pub fn get_best_move(&self) -> Option<Move> {
-        return self.best_move
+        return self.best_move;
     }
 }
 
 pub fn minimax(game: &dyn MinimaxDriver) -> DecisionTreeNode {
     let winner = game.get_winner();
-    match winner {
-        Player::X => {
-            return DecisionTreeNode {
-                score: 100,
-                ..Default::default()
-            };
-        }
-        Player::O => {
-            return DecisionTreeNode {
-                score: -100,
-                ..Default::default()
-            };
-        }
-        _ => (),
+    let score_multiplier = match winner {
+        Player::X => 1,
+        Player::O => -1,
+        Player::None => 0,
+    };
+
+    if winner != Player::None {
+        return DecisionTreeNode {
+            score: score_multiplier * 100,
+            ..Default::default()
+        };
     }
+
     let possible_moves = game.get_possible_moves();
     let new_states = possible_moves.iter().map(|&m| (m, game.apply_move(m)));
     let child_results = new_states.map(|(m, g)| (m, minimax(g.as_ref())));
 
     let child_results_map: HashMap<(usize, usize), DecisionTreeNode> = child_results.collect();
-    let best_move_in_child = child_results_map.iter().max_by_key(|(_pos, node)| node.score);
+
+    // this is where the actual minmax happens!
+    let best_move_in_child = if game.get_current_player() == Player::O {
+        child_results_map
+            .iter()
+            .min_by_key(|(_pos, node)| node.score)
+    } else {
+        child_results_map
+            .iter()
+            .max_by_key(|(_pos, node)| node.score)
+    };
+
+    // TODO refactor to combine with struct below
     let (max_pos, max_val) = if best_move_in_child.is_some() {
         (
             Some(best_move_in_child.unwrap().0.clone()),
@@ -78,7 +90,7 @@ impl core::fmt::Debug for DecisionTreeNode {
         f.debug_struct("DecisionTreeNode")
             .field("score", &self.score)
             .field("best_move", &self.best_move)
-            .field("moves", &format_args!("{:?}", self.moves.keys()))
+            .field("moves", &format_args!("{:?}", self.moves.keys())) // stop on keys to avoid recursion
             .finish()
     }
 }
