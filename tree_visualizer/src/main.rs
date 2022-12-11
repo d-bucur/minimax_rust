@@ -22,9 +22,9 @@ fn main() -> std::io::Result<()> {
         strict: true,
         stmts: Default::default(),
     };
-    let node1 = add_node(&mut graph, "example_node");
-    let node2 = add_node(&mut graph, "example_node2");
-    let node3 = add_node(&mut graph, "example_node3");
+    let node1 = add_node(&mut graph, "example_node", format!("{:?}", game));
+    let node2 = add_node(&mut graph, "example_node2", format!("{:?}", game));
+    let node3 = add_node(&mut graph, "example_node3", format!("{:?}", game));
     add_edge(&mut graph, node1.clone(), node2);
     add_edge(&mut graph, node1, node3);
 
@@ -39,7 +39,6 @@ fn main() -> std::io::Result<()> {
     .unwrap();
 
     let mut output_file = File::create("target/graph.svg")?;
-
     write!(output_file, "{}", graph_svg)
 }
 
@@ -50,10 +49,19 @@ fn add_edge(graph: &mut Graph, node1: NodeId, node2: NodeId) {
     }));
 }
 
-fn add_node(graph: &mut Graph, arg: &str) -> NodeId {
-    let id = NodeId(Id::Plain(arg.into()), None);
+fn add_node(graph: &mut Graph, node_id: &str, label: String) -> NodeId {
+    let id = NodeId(Id::Plain(node_id.into()), None);
     let returned_id = id.clone();
-    let node = Node::new(id, vec![]);
+    let node = Node::new(
+        id,
+        vec![
+            Attribute(
+                Id::Plain("label".into()),
+                Id::Escaped(format!("\"{}\"", label)),
+            ),
+            Attribute(Id::Plain("shape".into()), Id::Plain("box".into())),
+        ],
+    );
     graph.add_stmt(Stmt::Node(node));
     returned_id
 }
