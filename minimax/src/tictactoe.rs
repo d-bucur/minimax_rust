@@ -171,24 +171,29 @@ mod tests {
         assert_eq!(Some((2, 1)), node.get_best_move());
     }
 
+    fn play(game: TicTacToeGame) -> (Box<dyn MinimaxDriver>, i32) {
+        let mut moves = 0;
+        let mut decision_node = minimax(&game, None);
+        let mut new_game = Box::new(game) as Box<dyn MinimaxDriver>;
+        while decision_node.best_move.is_some() {
+            let next_move = decision_node.best_move.unwrap();
+            new_game = new_game.apply_move(next_move);
+            decision_node = decision_node.moves.remove(&next_move).unwrap();
+            moves += 1;
+        }
+        return (new_game, moves)
+    }
+
     #[rstest]
     fn test_winning_moves_two_turns() {
         let state = "
         ...
         OXX
         ..O";
-        let mut game =
-            Box::new(TicTacToeGame::from_state(state, Player::O)) as Box<dyn MinimaxDriver>;
-        let mut decision_node = minimax(&*game, None);
-        let mut moves = 0;
-        while decision_node.best_move.is_some() {
-            let next_move = decision_node.best_move.unwrap();
-            game = game.apply_move(next_move);
-            decision_node = decision_node.moves.remove(&next_move).unwrap();
-            moves += 1;
-        }
+        let mut game = TicTacToeGame::from_state(state, Player::O);
+        let (final_game, moves) = play(game);
         assert_eq!(moves, 3);
-        assert_eq!(game.get_winner(), Player::O);
+        assert_eq!(final_game.get_winner(), Player::O);
     }
 
     #[test]
@@ -198,12 +203,8 @@ mod tests {
         ...
         ...";
         let game = TicTacToeGame::from_state(state, Player::X);
-        let node = minimax(&game, None);
-        let mut game_state = Box::new(game) as Box<dyn MinimaxDriver>;
-        while !game_state.has_ended() {
-            game_state = game_state.apply_move(node.best_move.unwrap());
-        }
-        assert!(game_state.get_winner() == Player::None);
+        let (final_game, moves) = play(game);
+        assert_eq!(final_game.get_winner(), Player::None);
     }
 
     #[fixture]
