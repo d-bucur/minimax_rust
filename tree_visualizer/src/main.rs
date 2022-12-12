@@ -9,19 +9,18 @@ use minimax::{
 fn main() -> std::io::Result<()> {
     // get the decision tree
     let state = "
-        OOX
-        O.X
-        X..";
+    OOX
+    O.X
+    X..";
     let game = minimax::tictactoe::TicTacToeGame::from_state(state, Player::X);
     let decision_tree = minimax(&game, None);
 
     // build the graph
     let mut graph = make_graph();
-    graph_tree(&mut graph, decision_tree, Box::new(game), 5, true);
+    graph_tree(&mut graph, decision_tree, Box::new(game), 5, false);
 
-    // print it
+    // print it to string
     let mut printer_context = PrinterContext::default();
-    // println!("{}", graph.print(&mut printer_context));
     let graph_svg = graphviz_rust::exec(
         graph,
         &mut printer_context,
@@ -87,14 +86,19 @@ fn graph_node(
             node_id,
             empty_score_visible,
         );
-        let color_edge = if best_move.unwrap() == m {
-            get_player_color(game.get_current_player())
+        let (color_edge, is_heavy) = if best_move.unwrap() == m {
+            (get_player_color(game.get_current_player()), true)
         } else {
-            "black"
-        }
-        .to_string();
+            ("black", false)
+        };
         if let Some(child) = child_node {
-            add_edge(graph, current_node.clone(), child, color_edge);
+            add_edge(
+                graph,
+                current_node.clone(),
+                child,
+                color_edge.to_string(),
+                is_heavy,
+            );
         }
         *node_id += 1;
     }
@@ -125,13 +129,24 @@ fn make_graph() -> Graph {
     }
 }
 
-fn add_edge(graph: &mut Graph, node1: NodeId, node2: NodeId, color: String) {
+fn add_edge(graph: &mut Graph, node1: NodeId, node2: NodeId, color: String, is_heavy: bool) {
+    let mut attrs = vec![Attribute(
+        Id::Plain("color".into()),
+        Id::Plain(color.into()),
+    )];
+    if is_heavy {
+        attrs.push(Attribute(
+            Id::Plain("weight".into()),
+            Id::Plain("10".into()),
+        ));
+        attrs.push(Attribute(
+            Id::Plain("penwidth".into()),
+            Id::Plain("2".into()),
+        ));
+    }
     graph.add_stmt(Stmt::Edge(Edge {
         ty: EdgeTy::Pair(Vertex::N(node1), Vertex::N(node2)),
-        attributes: vec![Attribute(
-            Id::Plain("color".into()),
-            Id::Plain(color.into()),
-        )],
+        attributes: attrs,
     }));
 }
 

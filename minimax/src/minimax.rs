@@ -68,8 +68,12 @@ pub fn _minimax(
 
     let possible_moves = game.get_possible_moves();
     let new_states = possible_moves.iter().map(|&m| (m, game.apply_move(m)));
-    let child_results =
-        new_states.map(|(m, g)| (m, _minimax(g.as_ref(), current_depth + 1, depth_factor, max_depth)));
+    let child_results = new_states.map(|(m, g)| {
+        (
+            m,
+            _minimax(g.as_ref(), current_depth + 1, depth_factor, max_depth),
+        )
+    });
     let child_results_map: HashMap<(usize, usize), DecisionTreeNode> = child_results.collect();
 
     // this is where the actual minmax happens!
