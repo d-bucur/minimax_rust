@@ -3,21 +3,22 @@ use std::{fs::File, io::Write};
 use graphviz_rust::{cmd::CommandArg, dot_structures::*, printer::PrinterContext};
 use minimax::{
     game::*,
-    minimax::{minimax, MinimaxDriver},
+    minimax::{minimax, DecisionTreeNode, MinimaxDriver},
 };
 
 fn main() -> std::io::Result<()> {
+    // TODO extract constants
     // get the decision tree
     let state = "
     ...
-    ...
-    ...";
+    OXX
+    ..O";
     let game = minimax::tictactoe::TicTacToeGame::from_state(state, Player::X);
     let decision_tree = minimax(&game, None);
 
     // build the graph
     let mut graph = make_graph();
-    graph_tree(&mut graph, decision_tree, Box::new(game), 4, false);
+    graph_tree(&mut graph, decision_tree, Box::new(game), 4, 2);
 
     // print it to string
     let mut printer_context = PrinterContext::default();
@@ -38,7 +39,7 @@ fn graph_tree(
     decision_tree: minimax::minimax::DecisionTreeNode,
     game: Box<dyn MinimaxDriver>,
     max_depth: i32,
-    empty_score_visible: bool,
+    alternatives_to_draw: usize,
 ) {
     graph_node(
         graph,
@@ -47,7 +48,7 @@ fn graph_tree(
         0,
         max_depth,
         &mut 0,
-        empty_score_visible,
+        alternatives_to_draw,
     );
 }
 
@@ -58,7 +59,7 @@ fn graph_node(
     depth: i32,
     max_depth: i32,
     node_id: &mut i32,
-    empty_score_visible: bool,
+    alternatives_to_draw: usize,
 ) -> Option<NodeId> {
     if depth > max_depth {
         return None;
@@ -71,11 +72,13 @@ fn graph_node(
         color_node.into(),
     );
 
-    let best_move = decision_tree.best_move;
-    let move_iterator = decision_tree.moves.into_iter().filter(|(m, tree_node)| {
-        empty_score_visible || tree_node.score != 0 || *m == best_move.unwrap()
-    });
-    for (m, tree_node) in move_iterator {
+    // prepare moves to iterate over
+    let score_factor = game.get_current_player().score_multiplier();
+    let mut all_moves: Vec<(Move, DecisionTreeNode)> = decision_tree.moves.into_iter().collect();
+    all_moves.sort_by_key(|(_, n)| -n.score * score_factor);
+
+    // draw nodes ordered by score
+    for (m, tree_node) in all_moves.into_iter().take(1 + alternatives_to_draw) {
         let new_game = game.apply_move(m);
         let child_node = graph_node(
             graph,
@@ -84,9 +87,9 @@ fn graph_node(
             depth + 1,
             max_depth,
             node_id,
-            empty_score_visible,
+            alternatives_to_draw,
         );
-        let (color_edge, is_heavy) = if best_move.unwrap() == m {
+        let (color_edge, is_heavy) = if decision_tree.best_move.unwrap() == m {
             (get_player_color(game.get_current_player()), true)
         } else {
             ("black", false)

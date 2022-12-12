@@ -109,7 +109,7 @@ fn _minimax(
 }
 
 impl Player {
-    fn score_multiplier(&self) -> i32 {
+    pub fn score_multiplier(&self) -> i32 {
         match &self {
             Player::X => 1,
             Player::O => -1,
