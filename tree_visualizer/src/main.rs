@@ -1,10 +1,6 @@
 use std::{fs::File, io::Write};
 
-use graphviz_rust::{
-    cmd::CommandArg,
-    dot_structures::*,
-    printer::{DotPrinter, PrinterContext},
-};
+use graphviz_rust::{cmd::CommandArg, dot_structures::*, printer::PrinterContext};
 use minimax::{
     game::*,
     minimax::{minimax, MinimaxDriver},
@@ -14,14 +10,14 @@ fn main() -> std::io::Result<()> {
     // get the decision tree
     let state = "
         ...
-        OXX
-        ..O";
-    let game = minimax::tictactoe::TicTacToeGame::from_state(state, Player::O);
+        ...
+        ...";
+    let game = minimax::tictactoe::TicTacToeGame::from_state(state, Player::X);
     let decision_tree = minimax(&game, None);
 
     // build the graph
     let mut graph = make_graph();
-    graph_tree(&mut graph, decision_tree, Box::new(game));
+    graph_tree(&mut graph, decision_tree, Box::new(game), 2, true);
 
     // print it
     let mut printer_context = PrinterContext::default();
@@ -42,8 +38,10 @@ fn graph_tree(
     graph: &mut Graph,
     decision_tree: minimax::minimax::DecisionTreeNode,
     game: Box<dyn MinimaxDriver>,
+    max_depth: i32,
+    empty_score_visible: bool,
 ) {
-    graph_node(graph, decision_tree, game, 0, &mut 0, false);
+    graph_node(graph, decision_tree, game, 0, max_depth, &mut 0, empty_score_visible);
 }
 
 fn graph_node(
@@ -51,10 +49,12 @@ fn graph_node(
     decision_tree: minimax::minimax::DecisionTreeNode,
     game: Box<dyn MinimaxDriver>,
     depth: i32,
+    max_depth: i32,
     node_id: &mut i32,
     empty_score_visible: bool,
+    // TODO visualization parameters: terminal states always visible, selected move always visible
 ) -> Option<NodeId> {
-    if !empty_score_visible && decision_tree.score == 0 {
+    if depth > max_depth {
         return None;
     }
     let color_node = get_player_color(game.get_winner());
@@ -66,13 +66,15 @@ fn graph_node(
     );
 
     let best_move = decision_tree.best_move;
-    for (m, tree_node) in decision_tree.moves {
+    let move_iterator = decision_tree.moves.into_iter().filter(|(m, tree_node)| empty_score_visible || tree_node.score !=0 || *m == best_move.unwrap());
+    for (m, tree_node) in move_iterator {
         let new_game = game.apply_move(m);
         let child_node = graph_node(
             graph,
             tree_node,
             new_game,
             depth + 1,
+            max_depth,
             node_id,
             empty_score_visible,
         );

@@ -181,7 +181,7 @@ mod tests {
             decision_node = decision_node.moves.remove(&next_move).unwrap();
             moves += 1;
         }
-        return (new_game, moves)
+        return (new_game, moves);
     }
 
     #[rstest]

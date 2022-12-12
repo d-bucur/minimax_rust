@@ -20,6 +20,7 @@ pub trait MinimaxDriver: core::fmt::Debug {
 
 #[derive(Default)]
 pub struct DecisionTreeNode {
+    // TODO need to divide into min and max scores?
     pub score: i32,
     // TODO is a reference to the board needed for debug?
     pub moves: HashMap<Move, DecisionTreeNode>,
@@ -33,28 +34,38 @@ impl DecisionTreeNode {
 }
 
 pub fn minimax(game: &dyn MinimaxDriver, max_depth: Option<u32>) -> DecisionTreeNode {
-    if max_depth.unwrap_or(100) <= 0 {
-        return DecisionTreeNode {
-            ..Default::default()
-        };
-    }
+    _minimax(game, 0, max_depth)
+}
+
+pub fn _minimax(
+    game: &dyn MinimaxDriver,
+    current_depth: u32,
+    max_depth: Option<u32>,
+) -> DecisionTreeNode {
     let winner = game.get_winner();
-    let score_multiplier = match winner {
-        Player::X => 1,
-        Player::O => -1,
-        Player::None => 0,
-    };
 
     if winner != Player::None {
+        let score_multiplier = match winner {
+            Player::X => 1,
+            Player::O => -1,
+            Player::None => 0,
+        };
         return DecisionTreeNode {
             score: score_multiplier * 100,
             ..Default::default()
         };
     }
 
+    if current_depth >= max_depth.unwrap_or(1000) {
+        return DecisionTreeNode {
+            ..Default::default()
+        };
+    }
+
     let possible_moves = game.get_possible_moves();
     let new_states = possible_moves.iter().map(|&m| (m, game.apply_move(m)));
-    let child_results = new_states.map(|(m, g)| (m, minimax(g.as_ref(), max_depth.map(|s| s - 1))));
+    let child_results =
+        new_states.map(|(m, g)| (m, _minimax(g.as_ref(), current_depth + 1, max_depth)));
     let child_results_map: HashMap<(usize, usize), DecisionTreeNode> = child_results.collect();
 
     // this is where the actual minmax happens!
