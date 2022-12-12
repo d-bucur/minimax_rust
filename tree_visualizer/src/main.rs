@@ -9,15 +9,15 @@ use minimax::{
 fn main() -> std::io::Result<()> {
     // get the decision tree
     let state = "
-    OOX
-    O.X
-    X..";
+    ...
+    ...
+    ...";
     let game = minimax::tictactoe::TicTacToeGame::from_state(state, Player::X);
     let decision_tree = minimax(&game, None);
 
     // build the graph
     let mut graph = make_graph();
-    graph_tree(&mut graph, decision_tree, Box::new(game), 5, false);
+    graph_tree(&mut graph, decision_tree, Box::new(game), 4, false);
 
     // print it to string
     let mut printer_context = PrinterContext::default();

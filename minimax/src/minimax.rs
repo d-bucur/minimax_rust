@@ -35,24 +35,20 @@ impl DecisionTreeNode {
 
 // TODO extract params into struct with defaults
 pub fn minimax(game: &dyn MinimaxDriver, max_depth: Option<u32>) -> DecisionTreeNode {
-    _minimax(game, 0, 0.95, max_depth)
+    _minimax(game, 0, 0.95, max_depth, 0.25)
 }
 
 // TODO profile with struct values instead of passing constant params
-pub fn _minimax(
+fn _minimax(
     game: &dyn MinimaxDriver,
     current_depth: u32,
     depth_factor: f32,
     max_depth: Option<u32>,
+    weight_suboptimal: f32,
 ) -> DecisionTreeNode {
     let winner = game.get_winner();
-
     if winner != Player::None {
-        let score_multiplier = match winner {
-            Player::X => 1,
-            Player::O => -1,
-            Player::None => 0,
-        };
+        let score_multiplier = winner.score_multiplier();
         const MAX_SCORE: i32 = 100;
         return DecisionTreeNode {
             score: score_multiplier * MAX_SCORE,
@@ -68,38 +64,40 @@ pub fn _minimax(
 
     let possible_moves = game.get_possible_moves();
     let new_states = possible_moves.iter().map(|&m| (m, game.apply_move(m)));
-    let child_results = new_states.map(|(m, g)| {
+    let child_results = new_states.map(|(pos, game)| {
         (
-            m,
-            _minimax(g.as_ref(), current_depth + 1, depth_factor, max_depth),
+            pos,
+            _minimax(
+                game.as_ref(),
+                current_depth + 1,
+                depth_factor,
+                max_depth,
+                weight_suboptimal,
+            ),
         )
     });
     let child_results_map: HashMap<(usize, usize), DecisionTreeNode> = child_results.collect();
 
     // this is where the actual minmax happens!
-    let best_move_in_child = if game.get_current_player() == Player::O {
-        child_results_map
-            .iter()
-            .min_by_key(|(_pos, node)| node.score)
-    } else {
-        child_results_map
-            .iter()
-            .max_by_key(|(_pos, node)| node.score)
-    };
+    let mut best_move = None;
+    let mut best_value = 0;
+    let mut suboptimal_value = 0.;
+    let score_multiplier = game.get_current_player().score_multiplier();
 
-    // TODO refactor to combine with struct below
-    let (max_pos, max_val) = if best_move_in_child.is_some() {
-        (
-            Some(best_move_in_child.unwrap().0.clone()),
-            best_move_in_child.unwrap().1.score,
-        )
-    } else {
-        (None, 0)
-    };
+    for (pos, node) in child_results_map.iter() {
+        if node.score * score_multiplier >= best_value || best_move.is_none() {
+            best_move = Some(pos);
+            best_value = node.score * score_multiplier;
+        }
+        suboptimal_value += node.score as f32;
+    }
+    suboptimal_value /= possible_moves.len() as f32;
 
     let node = DecisionTreeNode {
-        best_move: max_pos,
-        score: (max_val as f32 * depth_factor) as i32,
+        best_move: best_move.cloned(),
+        score: (((best_value * score_multiplier) as f32 * (1. - weight_suboptimal)
+            + suboptimal_value * weight_suboptimal)
+            * depth_factor) as i32,
         moves: child_results_map,
     };
     debug!("Minimax in node: \n{:?}", game);
@@ -108,6 +106,16 @@ pub fn _minimax(
     debug!("-------------");
     node
     // TODO node cache
+}
+
+impl Player {
+    fn score_multiplier(&self) -> i32 {
+        match &self {
+            Player::X => 1,
+            Player::O => -1,
+            Player::None => 0,
+        }
+    }
 }
 
 impl core::fmt::Debug for DecisionTreeNode {
