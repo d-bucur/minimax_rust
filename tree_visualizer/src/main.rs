@@ -9,15 +9,15 @@ use minimax::{
 fn main() -> std::io::Result<()> {
     // get the decision tree
     let state = "
-        ...
-        ...
-        ...";
+        OOX
+        O.X
+        X..";
     let game = minimax::tictactoe::TicTacToeGame::from_state(state, Player::X);
     let decision_tree = minimax(&game, None);
 
     // build the graph
     let mut graph = make_graph();
-    graph_tree(&mut graph, decision_tree, Box::new(game), 2, true);
+    graph_tree(&mut graph, decision_tree, Box::new(game), 5, true);
 
     // print it
     let mut printer_context = PrinterContext::default();
@@ -41,7 +41,15 @@ fn graph_tree(
     max_depth: i32,
     empty_score_visible: bool,
 ) {
-    graph_node(graph, decision_tree, game, 0, max_depth, &mut 0, empty_score_visible);
+    graph_node(
+        graph,
+        decision_tree,
+        game,
+        0,
+        max_depth,
+        &mut 0,
+        empty_score_visible,
+    );
 }
 
 fn graph_node(
@@ -52,7 +60,6 @@ fn graph_node(
     max_depth: i32,
     node_id: &mut i32,
     empty_score_visible: bool,
-    // TODO visualization parameters: terminal states always visible, selected move always visible
 ) -> Option<NodeId> {
     if depth > max_depth {
         return None;
@@ -66,7 +73,9 @@ fn graph_node(
     );
 
     let best_move = decision_tree.best_move;
-    let move_iterator = decision_tree.moves.into_iter().filter(|(m, tree_node)| empty_score_visible || tree_node.score !=0 || *m == best_move.unwrap());
+    let move_iterator = decision_tree.moves.into_iter().filter(|(m, tree_node)| {
+        empty_score_visible || tree_node.score != 0 || *m == best_move.unwrap()
+    });
     for (m, tree_node) in move_iterator {
         let new_game = game.apply_move(m);
         let child_node = graph_node(

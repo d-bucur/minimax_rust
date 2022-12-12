@@ -7,6 +7,11 @@
 - secondary frontend: export to wasm and hook up to javascript game
 
 # Steps
-- minimax base
+- ~~minimax base on tictactoe~~
+- parameters for age and best chance of winning
+- setup iai
+- cache
+- connect4 working
+- symmetry optimization on cache
 - alfa beta pruning
 - monte carlo tree search?

@@ -33,13 +33,16 @@ impl DecisionTreeNode {
     }
 }
 
+// TODO extract params into struct with defaults
 pub fn minimax(game: &dyn MinimaxDriver, max_depth: Option<u32>) -> DecisionTreeNode {
-    _minimax(game, 0, max_depth)
+    _minimax(game, 0, 0.95, max_depth)
 }
 
+// TODO profile with struct values instead of passing constant params
 pub fn _minimax(
     game: &dyn MinimaxDriver,
     current_depth: u32,
+    depth_factor: f32,
     max_depth: Option<u32>,
 ) -> DecisionTreeNode {
     let winner = game.get_winner();
@@ -50,8 +53,9 @@ pub fn _minimax(
             Player::O => -1,
             Player::None => 0,
         };
+        const MAX_SCORE: i32 = 100;
         return DecisionTreeNode {
-            score: score_multiplier * 100,
+            score: score_multiplier * MAX_SCORE,
             ..Default::default()
         };
     }
@@ -65,7 +69,7 @@ pub fn _minimax(
     let possible_moves = game.get_possible_moves();
     let new_states = possible_moves.iter().map(|&m| (m, game.apply_move(m)));
     let child_results =
-        new_states.map(|(m, g)| (m, _minimax(g.as_ref(), current_depth + 1, max_depth)));
+        new_states.map(|(m, g)| (m, _minimax(g.as_ref(), current_depth + 1, depth_factor, max_depth)));
     let child_results_map: HashMap<(usize, usize), DecisionTreeNode> = child_results.collect();
 
     // this is where the actual minmax happens!
@@ -91,7 +95,7 @@ pub fn _minimax(
 
     let node = DecisionTreeNode {
         best_move: max_pos,
-        score: max_val,
+        score: (max_val as f32 * depth_factor) as i32,
         moves: child_results_map,
     };
     debug!("Minimax in node: \n{:?}", game);

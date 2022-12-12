@@ -196,6 +196,18 @@ mod tests {
         assert_eq!(final_game.get_winner(), Player::O);
     }
 
+    #[rstest]
+    fn test_fastest_win() {
+        let state = "
+        OOX
+        O.X
+        X..";
+        let mut game = TicTacToeGame::from_state(state, Player::X);
+        let (final_game, moves) = play(game);
+        assert_eq!(moves, 1);
+        assert_eq!(final_game.get_winner(), Player::X);
+    }
+
     #[test]
     fn test_best_moves_always_end_in_draw() {
         let state = "
