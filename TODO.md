@@ -9,7 +9,7 @@
 # Steps
 - ~~minimax base on tictactoe~~
 - ~~parameters for age and best chance of winning~~
-- setup iai
+- ~~setup iai~~
 - cache
 - connect4 working
 - symmetry optimization on cache?

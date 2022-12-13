@@ -1,4 +1,5 @@
 # cargo-make tasks
+# not very helpful and seems to be executing the tasks 3 times??
 [env]
 CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
 
@@ -9,3 +10,7 @@ args = ["run", "-p", "game_frontend"]
 [tasks.test]
 command = "cargo"
 args = ["test", "-p", "minimax"]
+
+[tasks.bench]
+command = "cargo"
+args = ["bench", "-p", "minimax"]
