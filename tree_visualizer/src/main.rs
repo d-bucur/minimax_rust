@@ -7,18 +7,22 @@ use minimax::{
 };
 
 fn main() -> std::io::Result<()> {
-    // TODO extract constants
-    // get the decision tree
+    // graph parameters
+    const MAX_DEPTH: i32 = 10;
+    const ALTERNATIVES_TO_DRAW: usize = 2;
+    const MINIMAX_DEPTH: Option<u32> = None;
     let state = "
     ...
     OXX
     ..O";
     let game = minimax::tictactoe::TicTacToeGame::from_state(state, Player::X);
-    let decision_tree = minimax(&game, None);
+
+    // get the decision tree
+    let decision_tree = minimax(&game, MINIMAX_DEPTH);
 
     // build the graph
     let mut graph = make_graph();
-    graph_tree(&mut graph, decision_tree, Box::new(game), 4, 2);
+    graph_tree(&mut graph, decision_tree, Box::new(game), MAX_DEPTH, ALTERNATIVES_TO_DRAW);
 
     // print it to string
     let mut printer_context = PrinterContext::default();
@@ -72,10 +76,24 @@ fn graph_node(
         color_node.into(),
     );
 
+    if decision_tree.moves.len() == 0 {
+        return Some(current_node)
+    }
+
     // prepare moves to iterate over
     let score_factor = game.get_current_player().score_multiplier();
     let mut all_moves: Vec<(Move, DecisionTreeNode)> = decision_tree.moves.into_iter().collect();
     all_moves.sort_by_key(|(_, n)| -n.score * score_factor);
+
+    // always get best move in the front of the list
+    // if there are multiple moves with the same highest score, the selected one might not be plotted
+    // not the most efficient way to do it, but this is not a hotspot
+    let best_move_idx = all_moves.iter().position(|m| m.0 == decision_tree.best_move.unwrap()).unwrap();
+    if best_move_idx != 0 {
+        all_moves.rotate_right(1);
+        let new_best_idx = (best_move_idx + 1) % all_moves.len();
+        all_moves.swap(0, new_best_idx);
+    }
 
     // draw nodes ordered by score
     for (m, tree_node) in all_moves.into_iter().take(1 + alternatives_to_draw) {

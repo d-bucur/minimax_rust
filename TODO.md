@@ -8,10 +8,16 @@
 
 # Steps
 - ~~minimax base on tictactoe~~
-- parameters for age and best chance of winning
+- ~~parameters for age and best chance of winning~~
 - setup iai
 - cache
 - connect4 working
-- symmetry optimization on cache
+- symmetry optimization on cache?
 - alfa beta pruning
+- games in bevy
+- chess
+- add level adjustment: a driver that will watch player moves and choose an answer in the same range (ie, average to 50% best move out of the ordered scores)
+- make it work on the graph codinggame game
 - monte carlo tree search?
+- compile to wasm, use a js frontend for the game (without bevy)
+- make it work on an RTS (discrete sampling of the game state)

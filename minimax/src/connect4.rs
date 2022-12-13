@@ -12,7 +12,7 @@ pub struct Connect4Game {
 }
 
 impl Connect4Game {
-    fn from_state(board_str: &str, last_move: Option<Move>, current_player: Player) -> Self {
+    pub fn from_state(board_str: &str, last_move: Option<Move>, current_player: Player) -> Self {
         let mut game = Connect4Game::default();
         game.current_player = current_player;
         game.last_move = last_move;
