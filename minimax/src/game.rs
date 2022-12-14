@@ -1,8 +1,8 @@
 #[derive(PartialEq, Copy, Clone, Debug)]
 pub enum Player {
+    None,
     X,
     O,
-    None,
 }
 
 impl From<Player> for String {

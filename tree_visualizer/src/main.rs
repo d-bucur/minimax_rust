@@ -1,4 +1,4 @@
-use std::{fs::File, io::Write};
+use std::{fs::File, io::Write, rc::Rc};
 
 use graphviz_rust::{cmd::CommandArg, dot_structures::*, printer::PrinterContext};
 use minimax::{
@@ -8,24 +8,27 @@ use minimax::{
 
 fn main() -> std::io::Result<()> {
     // graph parameters
-    const MAX_DEPTH: i32 = 100;
-    const ALTERNATIVES_TO_DRAW: usize = 2;
-    const MINIMAX_DEPTH: Option<u32> = Some(8);
-
-    // let state = "
-    // ...
-    // OXX
-    // ..O";
-    // let game = minimax::tictactoe::TicTacToeGame::from_state(state, Player::X);
+    const MAX_DEPTH: i32 = 3;
+    const ALTERNATIVES_TO_DRAW: usize = 100;
+    const MINIMAX_DEPTH: Option<u32> = None;
 
     let state = "
-    .......
-    .O.X...
-    .XOO...
-    .OXOX..
-    .OXOXX.
-    .OOXXO.";
-    let game = minimax::connect4::Connect4Game::from_state(state, None, Player::X);
+        ...
+        OXX
+        ..O";
+    let game = minimax::tictactoe::TicTacToeGame::from_state(state, Player::O);
+
+    // const MAX_DEPTH: i32 = 2;
+    // const ALTERNATIVES_TO_DRAW: usize = 10;
+    // const MINIMAX_DEPTH: Option<u32> = Some(8);
+    // let state = "
+    // .......
+    // .O.X...
+    // .XOO...
+    // .OXOX..
+    // .OXOXX.
+    // .OOXXO.";
+    // let game = minimax::connect4::Connect4Game::from_state(state, None, Player::X);
 
     // get the decision tree
     let decision_tree = minimax(&game, MINIMAX_DEPTH);
@@ -56,7 +59,7 @@ fn main() -> std::io::Result<()> {
 
 fn graph_tree(
     graph: &mut Graph,
-    decision_tree: minimax::minimax::DecisionTreeNode,
+    decision_tree: Rc<minimax::minimax::DecisionTreeNode>,
     game: Box<dyn MinimaxDriver>,
     max_depth: i32,
     alternatives_to_draw: usize,
@@ -74,7 +77,7 @@ fn graph_tree(
 
 fn graph_node(
     graph: &mut Graph,
-    decision_tree: minimax::minimax::DecisionTreeNode,
+    decision_tree: Rc<minimax::minimax::DecisionTreeNode>,
     game: Box<dyn MinimaxDriver>,
     depth: i32,
     max_depth: i32,
@@ -98,7 +101,11 @@ fn graph_node(
 
     // prepare moves to iterate over
     let score_factor = game.get_current_player().score_multiplier();
-    let mut all_moves: Vec<(Move, DecisionTreeNode)> = decision_tree.moves.into_iter().collect();
+    let mut all_moves: Vec<(Move, Rc<DecisionTreeNode>)> = decision_tree
+        .moves
+        .iter()
+        .map(|(p, t)| (p.clone(), t.clone()))
+        .collect();
     all_moves.sort_by_key(|(_, n)| -n.score * score_factor);
 
     // always get best move in the front of the list

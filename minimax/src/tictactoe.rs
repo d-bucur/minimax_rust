@@ -6,7 +6,7 @@ use crate::{game::*, minimax::*};
 #[derive(Clone)]
 pub struct TicTacToeGame {
     pub current_player: Player,
-    pub board: [[Player; 3]; 3], // TODO optimize into array
+    pub board: [[Player; 3]; 3], // TODO optimize into array/single unit128 (like cache key)
 }
 
 impl TicTacToeGame {
@@ -71,8 +71,11 @@ impl MinimaxDriver for TicTacToeGame {
         return new_game;
     }
 
-    fn get_hash(&self) {
-        todo!()
+    fn get_hash(&self) -> GameHash {
+        let grid_values = self.board.iter().flat_map(|r| r.iter().map(|p| p));
+        let mut hash: u128 = grid_values.zip(1..10).map(|(val, pos)| (*val as u128) * 4u128.pow(pos)).sum();
+        hash += self.current_player as u128;
+        hash
     }
 
     fn get_current_player(&self) -> Player {
@@ -178,7 +181,7 @@ mod tests {
         while decision_node.best_move.is_some() {
             let next_move = decision_node.best_move.unwrap();
             new_game = new_game.apply_move(next_move);
-            decision_node = decision_node.moves.remove(&next_move).unwrap();
+            decision_node = decision_node.moves.get(&next_move).unwrap().clone();
             moves += 1;
         }
         return (new_game, moves);
@@ -217,6 +220,27 @@ mod tests {
         let game = TicTacToeGame::from_state(state, Player::X);
         let (final_game, _moves) = play(game);
         assert_eq!(final_game.get_winner(), Player::None);
+    }
+
+    #[test]
+    fn test_hash() {
+        let state = "
+        ...
+        ...
+        ...";
+        let mut game = TicTacToeGame::from_state(state, Player::X);
+        assert_eq!(game.get_hash(), 1);
+        game.current_player = Player::O;
+        assert_eq!(game.get_hash(), 2);
+
+        let state = "
+        X..
+        ...
+        ...";
+        let mut game = TicTacToeGame::from_state(state, Player::X);
+        assert_eq!(game.get_hash(), 5);
+        game.current_player = Player::O;
+        assert_eq!(game.get_hash(), 6);
     }
 
     #[fixture]

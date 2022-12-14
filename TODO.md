@@ -10,7 +10,7 @@
 - ~~minimax base on tictactoe~~
 - ~~parameters for age and best chance of winning~~
 - ~~setup iai~~
-- cache
+- ~~cache~~. need to understand how to save and reuse cache for next algorithm calls
 - ~~connect4 working~~
 - games in bevy
 - alfa beta pruning
