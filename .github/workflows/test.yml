@@ -89,4 +89,8 @@ jobs:
       run: cargo bench --bench minimax_bench_iai --quiet >> run2.txt
 
     - name: Create table and add to summary
-      run: echo "|  old |  new |\\n|---|---|" > res.md && paste -d "|" run1.txt run2.txt | awk '{printf "|"$0"|\n"}' >> res.md && cat res.md >> $GITHUB_STEP_SUMMARY
+      run: |
+        echo "|  old |  new |
+        |---|---|" > res.md &&
+        paste -d "|" run1.txt run2.txt | awk '{printf "|"$0"|\n"}' >> res.md &&
+        cat res.md >> $GITHUB_STEP_SUMMARY
