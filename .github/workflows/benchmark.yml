@@ -1,4 +1,4 @@
-name: Rust
+name: Benchmark
 
 # adapted from https://github.com/bevyengine/bevy_github_ci_template/blob/main/.github/workflows/ci.yaml
 
@@ -35,7 +35,10 @@ jobs:
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
           target/
-        key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.toml') }}
+        key: ${{ runner.os }}-cargo-bench-${{ hashFiles('**/Cargo.toml') }}
+
+    - name: Install valgrind
+      run: sudo apt install valgrind
 
     - name: Install stable toolchain
       uses: actions-rs/toolchain@v1

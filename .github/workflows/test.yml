@@ -1,4 +1,4 @@
-name: Rust
+name: Test
 
 # adapted from https://github.com/bevyengine/bevy_github_ci_template/blob/main/.github/workflows/ci.yaml
 
