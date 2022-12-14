@@ -77,7 +77,7 @@ jobs:
     - name: Checkout previous commit
       uses: actions/checkout@v3
       with:
-        ref: '$GITHUB_REF^1'
+        ref: $GITHUB_REF^1
 
     - name: Run iai benchmark previous commit
       run: cargo bench --bench minimax_bench_iai --quiet >> $GITHUB_STEP_SUMMARY
@@ -85,7 +85,7 @@ jobs:
     - name: Checkout latest commit
       uses: actions/checkout@v3
       with:
-        ref: '$GITHUB_REF'
+        ref: $GITHUB_REF
 
     - name: Run iai benchmark latest commit
       run: cargo bench --bench minimax_bench_iai --quiet >> $GITHUB_STEP_SUMMARY
