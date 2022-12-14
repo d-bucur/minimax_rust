@@ -79,10 +79,10 @@ jobs:
       with:
         fetch-depth: '2'
 
-    - run: git switch $GITHUB_REF^1
+    - run: git checkout $GITHUB_REF^1
     - name: Run iai benchmark on previous commit
       run: cargo bench --bench minimax_bench_iai --quiet >> $GITHUB_STEP_SUMMARY
 
-    - run: git switch $GITHUB_REF
+    - run: git checkout $GITHUB_REF
     - name: Run iai benchmark on latest commit
       run: cargo bench --bench minimax_bench_iai --quiet >> $GITHUB_STEP_SUMMARY
