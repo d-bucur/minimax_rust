@@ -132,9 +132,9 @@ impl Debug for Connect4Game {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for row in &self.board {
             for &cell in row {
-                write!(f, "{} ", String::from(cell));
+                write!(f, "{} ", String::from(cell))?;
             }
-            writeln!(f);
+            writeln!(f)?;
         }
         write!(f, "next: {:?}", &self.current_player)
     }

@@ -89,9 +89,9 @@ impl Debug for TicTacToeGame {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for row in &self.board {
             for &cell in row {
-                write!(f, "{} ", String::from(cell));
+                write!(f, "{} ", String::from(cell))?;
             }
-            writeln!(f);
+            writeln!(f)?;
         }
         write!(f, "next: {:?}", &self.current_player)
     }
@@ -190,7 +190,7 @@ mod tests {
         ...
         OXX
         ..O";
-        let mut game = TicTacToeGame::from_state(state, Player::O);
+        let game = TicTacToeGame::from_state(state, Player::O);
         let (final_game, moves) = play(game);
         assert_eq!(moves, 3);
         assert_eq!(final_game.get_winner(), Player::O);
@@ -202,7 +202,7 @@ mod tests {
         OOX
         O.X
         X..";
-        let mut game = TicTacToeGame::from_state(state, Player::X);
+        let game = TicTacToeGame::from_state(state, Player::X);
         let (final_game, moves) = play(game);
         assert_eq!(moves, 1);
         assert_eq!(final_game.get_winner(), Player::X);
@@ -215,7 +215,7 @@ mod tests {
         ...
         ...";
         let game = TicTacToeGame::from_state(state, Player::X);
-        let (final_game, moves) = play(game);
+        let (final_game, _moves) = play(game);
         assert_eq!(final_game.get_winner(), Player::None);
     }
 
@@ -225,6 +225,6 @@ mod tests {
         let collector = tracing_subscriber::fmt()
             .with_max_level(tracing::Level::TRACE)
             .finish();
-        tracing::subscriber::set_global_default(collector);
+        tracing::subscriber::set_global_default(collector).unwrap();
     }
 }
