@@ -74,18 +74,15 @@ jobs:
           target/
         key: ${{ runner.os }}-cargo-bench-${{ hashFiles('**/Cargo.toml') }}
 
-    - name: Checkout previous commit
+    - name: Checkout
       uses: actions/checkout@v3
       with:
-        ref: $GITHUB_REF^1
+        fetch-depth: '2'
 
-    - name: Run iai benchmark previous commit
+    - run: git switch $GITHUB_REF^1
+    - name: Run iai benchmark on previous commit
       run: cargo bench --bench minimax_bench_iai --quiet >> $GITHUB_STEP_SUMMARY
 
-    - name: Checkout latest commit
-      uses: actions/checkout@v3
-      with:
-        ref: $GITHUB_REF
-
-    - name: Run iai benchmark latest commit
+    - run: git switch $GITHUB_REF
+    - name: Run iai benchmark on latest commit
       run: cargo bench --bench minimax_bench_iai --quiet >> $GITHUB_STEP_SUMMARY
