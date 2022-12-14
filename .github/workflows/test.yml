@@ -53,7 +53,16 @@ jobs:
   benchmark:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - name: Install valgrind
+      run: sudo apt install valgrind
+
+    - name: Install stable toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+        
     - name: Cache
       uses: actions/cache@v3
       with:
@@ -65,18 +74,18 @@ jobs:
           target/
         key: ${{ runner.os }}-cargo-bench-${{ hashFiles('**/Cargo.toml') }}
 
-    - name: Install valgrind
-      run: sudo apt install valgrind
-
-    - name: Install stable toolchain
-      uses: actions-rs/toolchain@v1
+    - name: Checkout previous commit
+      uses: actions/checkout@v3
       with:
-        profile: minimal
-        toolchain: stable
-        override: true
+        ref: '$GITHUB_REF^1'
 
-    - name: Run iai benchmark
-      uses: actions-rs/cargo@v1
+    - name: Run iai benchmark previous commit
+      run: cargo bench --bench minimax_bench_iai --quiet >> $GITHUB_STEP_SUMMARY
+
+    - name: Checkout latest commit
+      uses: actions/checkout@v3
       with:
-        command: bench
-        args: --bench minimax_bench_iai --quiet >> $GITHUB_STEP_SUMMARY
+        ref: '$GITHUB_REF'
+
+    - name: Run iai benchmark latest commit
+      run: cargo bench --bench minimax_bench_iai --quiet >> $GITHUB_STEP_SUMMARY
