@@ -81,8 +81,11 @@ jobs:
 
     - run: git checkout $GITHUB_REF^1
     - name: Run iai benchmark on previous commit
-      run: cargo bench --bench minimax_bench_iai --quiet >> $GITHUB_STEP_SUMMARY
+      run: cargo bench --bench minimax_bench_iai --quiet >> run1.txt
 
     - run: git checkout $GITHUB_REF
     - name: Run iai benchmark on latest commit
-      run: cargo bench --bench minimax_bench_iai --quiet >> $GITHUB_STEP_SUMMARY
+      run: cargo bench --bench minimax_bench_iai --quiet >> run2.txt
+
+    - name: Create table and add to summary
+      run: echo "|  old |  new |\n|---|---|" > res.md && paste -d "|" run1.txt run2.txt | awk '{printf "|"$0"|\n"}' >> res.md && cat res.md >> $GITHUB_STEP_SUMMARY
