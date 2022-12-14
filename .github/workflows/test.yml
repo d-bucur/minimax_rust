@@ -79,4 +79,4 @@ jobs:
       uses: actions-rs/cargo@v1
       with:
         command: bench
-        args: --bench minimax_bench_iai
+        args: --bench minimax_bench_iai --quiet >> $GITHUB_STEP_SUMMARY
