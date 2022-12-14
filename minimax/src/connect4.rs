@@ -153,8 +153,8 @@ impl Default for Connect4Game {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rstest::*;
     use crate::minimax::minimax;
+    use rstest::*;
 
     #[rstest]
     #[case(
@@ -233,5 +233,4 @@ mod tests {
         let node = minimax(&game, Some(1));
         assert_eq!(node.get_best_move(), Some((2, 4)));
     }
-
 }

@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use minimax::{game::Player, minimax::minimax, tictactoe::TicTacToeGame, connect4::Connect4Game}; // TODO minimax::minimax::minimax is funny, need better names
+use minimax::{connect4::Connect4Game, game::Player, minimax::minimax, tictactoe::TicTacToeGame}; // TODO minimax::minimax::minimax is funny, need better names
 
 fn tictactoe_benchmark(c: &mut Criterion) {
     c.bench_function("tictactoe_full_game", |b| {

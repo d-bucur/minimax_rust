@@ -1,5 +1,5 @@
 use iai::black_box;
-use minimax::{tictactoe::TicTacToeGame, game::Player, minimax::minimax, connect4::Connect4Game};
+use minimax::{connect4::Connect4Game, game::Player, minimax::minimax, tictactoe::TicTacToeGame};
 
 fn tictactoe_benchmark() {
     let board_str = "

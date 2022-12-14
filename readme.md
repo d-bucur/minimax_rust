@@ -28,3 +28,8 @@ cargo bench --bench minimax_bench_criterion
 ```
 Run benchmarks using criterion. Note that the result is much less stable than iai
 
+```
+cargo clippy -- -D warnings
+```
+Have clippy yell at you
+

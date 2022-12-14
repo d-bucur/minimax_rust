@@ -11,10 +11,10 @@
 - ~~parameters for age and best chance of winning~~
 - ~~setup iai~~
 - cache
-- connect4 working
+- ~~connect4 working~~
+- games in bevy
 - symmetry optimization on cache?
 - alfa beta pruning
-- games in bevy
 - chess
 - add level adjustment: a driver that will watch player moves and choose an answer in the same range (ie, average to 50% best move out of the ordered scores)
 - make it work on the graph codinggame game
