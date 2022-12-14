@@ -1,0 +1,51 @@
+name: Rust
+
+# adapted from https://github.com/bevyengine/bevy_github_ci_template/blob/main/.github/workflows/ci.yaml
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - '**.rs'
+      - '**.toml'
+      - '.github/workflows/**'
+    
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - '**.rs'
+      - '**.toml'
+      - '.github/workflows/**'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # runs cargo benchmark
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.toml') }}
+
+    - name: Install stable toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+
+    - name: Run iai benchmark
+      uses: actions-rs/cargo@v1
+      with:
+        command: bench
+        args: --bench minimax_bench_iai
