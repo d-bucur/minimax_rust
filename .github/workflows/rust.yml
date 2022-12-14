@@ -3,8 +3,17 @@ name: Rust
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - '**.rs'
+      - '**.toml'
+      - '.github/workflows/**'
+    
   pull_request:
     branches: [ "main" ]
+    paths:
+      - '**.rs'
+      - '**.toml'
+      - '.github/workflows/**'
 
 env:
   CARGO_TERM_COLOR: always
@@ -36,4 +45,4 @@ jobs:
     - name: Run cargo test
       uses: actions-rs/cargo@v1
       with:
-        command: test
+        command: test --verbose
