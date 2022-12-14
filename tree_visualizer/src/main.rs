@@ -8,14 +8,24 @@ use minimax::{
 
 fn main() -> std::io::Result<()> {
     // graph parameters
-    const MAX_DEPTH: i32 = 10;
+    const MAX_DEPTH: i32 = 100;
     const ALTERNATIVES_TO_DRAW: usize = 2;
-    const MINIMAX_DEPTH: Option<u32> = None;
+    const MINIMAX_DEPTH: Option<u32> = Some(8);
+
+    // let state = "
+    // ...
+    // OXX
+    // ..O";
+    // let game = minimax::tictactoe::TicTacToeGame::from_state(state, Player::X);
+    
     let state = "
-    ...
-    OXX
-    ..O";
-    let game = minimax::tictactoe::TicTacToeGame::from_state(state, Player::X);
+    .......
+    .O.X...
+    .XOO...
+    .OXOX..
+    .OXOXX.
+    .OOXXO.";
+    let game = minimax::connect4::Connect4Game::from_state(state, None, Player::X);
 
     // get the decision tree
     let decision_tree = minimax(&game, MINIMAX_DEPTH);

@@ -1,5 +1,5 @@
 use iai::black_box;
-use minimax::{tictactoe::TicTacToeGame, game::Player, minimax::minimax};
+use minimax::{tictactoe::TicTacToeGame, game::Player, minimax::minimax, connect4::Connect4Game};
 
 fn tictactoe_benchmark() {
     let board_str = "
@@ -10,4 +10,16 @@ fn tictactoe_benchmark() {
     minimax(black_box(&game), None);
 }
 
-iai::main!(tictactoe_benchmark);
+fn connect4_benchmark() {
+    let board_str = "
+        .......
+        .......
+        .......
+        .......
+        .......
+        .......";
+    let game = Connect4Game::from_state(board_str, None, Player::X);
+    minimax(black_box(&game), Some(7));
+}
+
+iai::main!(tictactoe_benchmark, connect4_benchmark);

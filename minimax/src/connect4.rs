@@ -5,6 +5,7 @@ use crate::{game::*, minimax::MinimaxDriver};
 const WIDTH: usize = 7;
 const HEIGHT: usize = 6;
 
+#[derive(Clone)]
 pub struct Connect4Game {
     pub current_player: Player,
     pub board: [[Player; WIDTH]; HEIGHT],
@@ -98,16 +99,19 @@ impl MinimaxDriver for Connect4Game {
             .collect()
     }
 
+    /// No checks are applied. Assumes that the move has been taken from [`get_possible_moves()`]
     fn apply_move(&self, next_move: Move) -> Box<dyn MinimaxDriver> {
-        todo!();
-        self.board[next_move.0][next_move.1] = self.current_player;
-        self.current_player = if self.get_winner() == Player::None {
+        let mut new_game = Box::new(self.clone());
+        new_game.board[next_move.0][next_move.1] = self.current_player;
+
+        new_game.current_player = if self.get_winner() == Player::None {
             // TODO should cache winner to avoid computing 2 times
             self.current_player.next()
         } else {
             Player::None
         };
-        self.last_move = Some(next_move);
+        new_game.last_move = Some(next_move);
+        return new_game;
     }
 
     fn get_hash(&self) {
@@ -132,7 +136,7 @@ impl Debug for Connect4Game {
             }
             writeln!(f);
         }
-        write!(f, "current_player: {:?}", &self.current_player)
+        write!(f, "next: {:?}", &self.current_player)
     }
 }
 
@@ -150,6 +154,7 @@ impl Default for Connect4Game {
 mod tests {
     use super::*;
     use rstest::*;
+    use crate::minimax::minimax;
 
     #[rstest]
     #[case(
@@ -192,11 +197,41 @@ mod tests {
         .OOXX..",
         Some((4, 3))
     )]
-    fn test_winner(#[case] board_str: &str, #[case] last_move: Option<Move>) {
+    fn test_winner_is_detected(#[case] board_str: &str, #[case] last_move: Option<Move>) {
         let game = Connect4Game::from_state(board_str, last_move, crate::game::Player::O);
         println!("{:?}", game);
         assert_eq!(game.get_winner(), Player::X);
     }
 
-    // TODO test possible moves
+    #[test]
+    fn test_possible_moves() {
+        let state = "
+        .......
+        .O.X...
+        .XOO...
+        .OXOX..
+        .OXOXX.
+        .OOXXO.";
+        let game = Connect4Game::from_state(state, Some((4, 5)), crate::game::Player::O);
+        let mut actual = game.get_possible_moves();
+        let mut expected = vec![(5, 0), (0, 1), (1, 2), (0, 3), (2, 4), (3, 5), (5, 6)];
+        actual.sort();
+        expected.sort();
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_winning_moves_one_turn() {
+        let state = "
+        .......
+        .O.X...
+        .XOO...
+        .OXOX..
+        .OXOXX.
+        .OOXXO.";
+        let game = Connect4Game::from_state(state, Some((4, 5)), crate::game::Player::X);
+        let node = minimax(&game, Some(1));
+        assert_eq!(node.get_best_move(), Some((2, 4)));
+    }
+
 }
