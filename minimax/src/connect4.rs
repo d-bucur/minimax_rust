@@ -11,7 +11,7 @@ const HEIGHT: usize = 6;
 #[derive(Clone)]
 pub struct Connect4Game {
     pub current_player: Player,
-    pub board: [[Player; WIDTH]; HEIGHT], // TODO single vector for performance
+    pub board: BoardType,
     last_move: Option<Move>,
 }
 
@@ -23,12 +23,12 @@ impl Connect4Game {
         let board_chars = board_str.chars().filter(|c| !c.is_whitespace());
         itertools::iproduct!(0..HEIGHT, 0..WIDTH)
             .zip(board_chars)
-            .for_each(|((i, j), c)| game.board[i][j] = Player::from(c));
+            .for_each(|((i, j), c)| game.board.set(i, j, Player::from(c)));
         return game;
     }
 
     fn _score(&self, i: usize, j: usize) -> i32 {
-        match self.board[i][j] {
+        match self.board.get(i, j) {
             Player::X => 1,
             Player::O => -1,
             Player::None => 0,
@@ -49,7 +49,7 @@ impl Connect4Game {
         );
         let mut width = 1;
         while width < 5 && a.1 > 0 && a.0 > 0 && a.0 < HEIGHT as i32 {
-            if self.board[a.0 as usize][a.1 as usize] != last_player {
+            if self.board.get(a.0 as usize, a.1 as usize) != last_player {
                 break;
             }
             width += 1;
@@ -57,7 +57,7 @@ impl Connect4Game {
             a.1 += dir_less.1;
         }
         while width < 5 && b.1 < WIDTH as i32 && b.0 > 0 && b.0 < HEIGHT as i32 {
-            if self.board[b.0 as usize][b.1 as usize] != last_player {
+            if self.board.get(b.0 as usize, b.1 as usize) != last_player {
                 break;
             }
             width += 1;
@@ -68,6 +68,23 @@ impl Connect4Game {
             return Some(last_player);
         }
         return None;
+    }
+}
+
+type BoardType = [Player; WIDTH * HEIGHT];
+
+trait BoardTypeAccess {
+    fn get(&self, i: usize, j: usize) -> Player;
+    fn set(&mut self, i: usize, j: usize, val: Player);
+}
+
+impl BoardTypeAccess for BoardType {
+    fn get(&self, i: usize, j: usize) -> Player {
+        self[i * WIDTH + j]
+    }
+
+    fn set(&mut self, i: usize, j: usize, val: Player) {
+        self[i * WIDTH + j] = val
     }
 }
 
@@ -95,7 +112,7 @@ impl MinimaxDriver for Connect4Game {
                 (0..HEIGHT)
                     .rev()
                     .zip(repeat(j))
-                    .find(|(i, j)| self.board[*i][*j] == Player::None)
+                    .find(|(i, j)| self.board.get(*i, *j) == Player::None)
             })
             .filter(|&p| p.is_some())
             .map(|p| p.unwrap())
@@ -105,15 +122,15 @@ impl MinimaxDriver for Connect4Game {
     /// No checks are applied. Assumes that the move has been taken from [`get_possible_moves()`]
     fn apply_move(&self, next_move: Move) -> Box<dyn MinimaxDriver> {
         let mut new_game = Box::new(self.clone());
-        new_game.board[next_move.0][next_move.1] = self.current_player;
+        new_game.board.set(next_move.0, next_move.1, self.current_player);
         new_game.current_player = self.current_player.next();
         new_game.last_move = Some(next_move);
         return new_game;
     }
 
     fn get_hash(&self) -> GameHash {
-        let grid_values = self.board.iter().flat_map(|r| r.iter().map(|p| p));
-        let mut hash: u128 = grid_values
+        // let grid_values = self.board.iter().flat_map(|r| r.iter().map(|p| p));
+        let mut hash: u128 = self.board.iter()
             .zip(1..43)
             .map(|(val, pos)| (*val as u128) * 4u128.pow(pos))
             .sum();
@@ -132,9 +149,9 @@ impl MinimaxDriver for Connect4Game {
 
 impl Debug for Connect4Game {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for row in &self.board {
-            for &cell in row {
-                write!(f, "{} ", String::from(cell))?;
+        for i in 0..HEIGHT {
+            for j in 0..WIDTH {
+                write!(f, "{} ", String::from(self.board.get(i, j)))?;
             }
             writeln!(f)?;
         }
@@ -146,7 +163,7 @@ impl Default for Connect4Game {
     fn default() -> Self {
         Self {
             current_player: Player::X,
-            board: [[Player::None; WIDTH]; HEIGHT],
+            board: [Player::None; WIDTH * HEIGHT],
             last_move: None,
         }
     }
