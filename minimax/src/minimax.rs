@@ -17,7 +17,7 @@ pub trait MinimaxDriver: core::fmt::Debug {
 
     fn get_current_player(&self) -> Player;
 
-    fn has_ended(&self) -> bool;
+    fn has_ended(&self) -> bool; // TODO not used at all?
 }
 
 #[derive(Default)]

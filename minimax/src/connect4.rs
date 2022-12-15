@@ -38,7 +38,7 @@ impl Connect4Game {
     fn _search_for_winner(&self, dir_less: (i32, i32), dir_more: (i32, i32)) -> Option<Player> {
         let last_move = self.last_move.unwrap();
         let last_player = self.current_player.next();
-        // don't really need both a and b, can use only one
+        // expand in two directions to find connected pieces
         let mut a = (
             last_move.0 as i32 + dir_less.0,
             last_move.1 as i32 + dir_less.1,
@@ -79,7 +79,7 @@ impl MinimaxDriver for Connect4Game {
                 ((-1, -1), (1, 1)),
                 ((-1, 0), (1, 0)),
                 ((1, -1), (-1, 1)),
-            ]; // hope this gets optimized by compiler and not reallocated on every run. Should profile
+            ]; // TODO hope this gets optimized by compiler and not reallocated on every run. Should profile
             for dir in DIRECTIONS {
                 if let Some(winner) = self._search_for_winner(dir.0, dir.1) {
                     return winner;
@@ -106,13 +106,7 @@ impl MinimaxDriver for Connect4Game {
     fn apply_move(&self, next_move: Move) -> Box<dyn MinimaxDriver> {
         let mut new_game = Box::new(self.clone());
         new_game.board[next_move.0][next_move.1] = self.current_player;
-
-        new_game.current_player = if self.get_winner() == Player::None {
-            // TODO should cache winner to avoid computing 2 times
-            self.current_player.next()
-        } else {
-            Player::None
-        };
+        new_game.current_player = self.current_player.next();
         new_game.last_move = Some(next_move);
         return new_game;
     }
@@ -132,8 +126,7 @@ impl MinimaxDriver for Connect4Game {
     }
 
     fn has_ended(&self) -> bool {
-        // TODO very inefficient
-        self.get_winner() != Player::None && self.get_possible_moves().len() == 0
+        self.get_winner() != Player::None || self.get_possible_moves().len() == 0
     }
 }
 

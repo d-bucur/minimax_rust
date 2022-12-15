@@ -8,7 +8,7 @@ use minimax::{
 
 fn main() -> std::io::Result<()> {
     // graph parameters
-    const MAX_DEPTH: i32 = 3;
+    const MAX_DEPTH: i32 = 10;
     const ALTERNATIVES_TO_DRAW: usize = 100;
     const MINIMAX_DEPTH: Option<u32> = None;
 

@@ -81,12 +81,7 @@ impl MinimaxDriver for TicTacToeGame {
             .board
             .set(next_move.0, next_move.1, self.current_player);
 
-        new_game.current_player = if new_game.get_winner() == Player::None {
-            // TODO should cache winner to avoid computing 2 times
-            self.current_player.next()
-        } else {
-            Player::None
-        };
+        new_game.current_player = self.current_player.next();
         return new_game;
     }
 
@@ -106,8 +101,7 @@ impl MinimaxDriver for TicTacToeGame {
     }
 
     fn has_ended(&self) -> bool {
-        // TODO very inefficient
-        self.get_winner() != Player::None && self.get_possible_moves().len() == 0
+        self.get_winner() != Player::None || self.get_possible_moves().len() == 0
     }
 }
 
