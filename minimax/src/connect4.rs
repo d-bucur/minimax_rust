@@ -119,7 +119,10 @@ impl MinimaxDriver for Connect4Game {
 
     fn get_hash(&self) -> GameHash {
         let grid_values = self.board.iter().flat_map(|r| r.iter().map(|p| p));
-        let mut hash: u128 = grid_values.zip(1..43).map(|(val, pos)| (*val as u128) * 4u128.pow(pos)).sum();
+        let mut hash: u128 = grid_values
+            .zip(1..43)
+            .map(|(val, pos)| (*val as u128) * 4u128.pow(pos))
+            .sum();
         hash += self.current_player as u128;
         hash
     }

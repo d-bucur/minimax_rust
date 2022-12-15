@@ -6,7 +6,7 @@ use crate::{game::*, minimax::*};
 #[derive(Clone)]
 pub struct TicTacToeGame {
     pub current_player: Player,
-    pub board: [[Player; 3]; 3], // TODO optimize into array/single unit128 (like cache key)
+    pub board: BoardType,
 }
 
 impl TicTacToeGame {
@@ -17,12 +17,12 @@ impl TicTacToeGame {
         let board_chars = board_str.chars().filter(|c| !c.is_whitespace());
         iproduct!(0..3, 0..3)
             .zip(board_chars)
-            .for_each(|((i, j), c)| game.board[i][j] = Player::from(c));
+            .for_each(|((i, j), c)| game.board.set(i, j, Player::from(c)));
         return game;
     }
 
     fn _score(&self, i: usize, j: usize) -> i32 {
-        match self.board[i][j] {
+        match self.board.get(i, j) {
             Player::X => 1,
             Player::O => -1,
             Player::None => 0,
@@ -30,11 +30,28 @@ impl TicTacToeGame {
     }
 }
 
+type BoardType = [Player; 9];
+
+trait BoardTypeAccess {
+    fn get(&self, i: usize, j: usize) -> Player;
+    fn set(&mut self, i: usize, j: usize, val: Player);
+}
+
+impl BoardTypeAccess for BoardType {
+    fn get(&self, i: usize, j: usize) -> Player {
+        self[i * 3 + j]
+    }
+
+    fn set(&mut self, i: usize, j: usize, val: Player) {
+        self[i * 3 + j] = val
+    }
+}
+
 impl Default for TicTacToeGame {
     fn default() -> Self {
         Self {
             current_player: Player::X,
-            board: [[Player::None; 3]; 3],
+            board: [Player::None; 9],
         }
     }
 }
@@ -54,13 +71,15 @@ impl MinimaxDriver for TicTacToeGame {
 
     fn get_possible_moves(&self) -> Vec<Move> {
         iproduct!(0..3, 0..3)
-            .filter(|(i, j)| self.board[*i][*j] == Player::None)
+            .filter(|(i, j)| self.board.get(*i, *j) == Player::None)
             .collect()
     }
 
     fn apply_move(&self, next_move: Move) -> Box<dyn MinimaxDriver> {
         let mut new_game = Box::new(self.clone());
-        new_game.board[next_move.0][next_move.1] = self.current_player;
+        new_game
+            .board
+            .set(next_move.0, next_move.1, self.current_player);
 
         new_game.current_player = if new_game.get_winner() == Player::None {
             // TODO should cache winner to avoid computing 2 times
@@ -72,8 +91,12 @@ impl MinimaxDriver for TicTacToeGame {
     }
 
     fn get_hash(&self) -> GameHash {
-        let grid_values = self.board.iter().flat_map(|r| r.iter().map(|p| p));
-        let mut hash: u128 = grid_values.zip(1..10).map(|(val, pos)| (*val as u128) * 4u128.pow(pos)).sum();
+        let mut hash: u128 = self
+            .board
+            .iter()
+            .zip(1..10)
+            .map(|(val, pos)| (*val as u128) * 4u128.pow(pos))
+            .sum();
         hash += self.current_player as u128;
         hash
     }
@@ -90,9 +113,9 @@ impl MinimaxDriver for TicTacToeGame {
 
 impl Debug for TicTacToeGame {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for row in &self.board {
-            for &cell in row {
-                write!(f, "{} ", String::from(cell))?;
+        for i in 0..3 {
+            for j in 0..3 {
+                write!(f, "{} ", String::from(self.board.get(i, j)))?;
             }
             writeln!(f)?;
         }

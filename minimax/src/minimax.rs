@@ -35,7 +35,6 @@ impl DecisionTreeNode {
     }
 }
 
-
 // TODO make struct and keep around stuff like the cache and visit count
 
 // TODO extract params into struct with defaults
