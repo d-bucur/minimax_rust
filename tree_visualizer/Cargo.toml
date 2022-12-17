@@ -8,3 +8,5 @@ edition = "2021"
 [dependencies]
 minimax = { path = "../minimax" }
 graphviz-rust = "0.4.0"
+tracing = "0.1.37"
+tracing-subscriber = "0.3.1"

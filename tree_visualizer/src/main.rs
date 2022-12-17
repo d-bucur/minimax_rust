@@ -7,28 +7,33 @@ use minimax::{
 };
 
 fn main() -> std::io::Result<()> {
+    let collector = tracing_subscriber::fmt()
+    .with_max_level(tracing::Level::INFO)
+    .finish();
+    tracing::subscriber::set_global_default(collector).unwrap();
+
     // graph parameters
-    // const MAX_DEPTH: i32 = 10;
-    // const ALTERNATIVES_TO_DRAW: usize = 100;
-    // const MINIMAX_DEPTH: Option<u32> = None;
+    const MAX_DEPTH: i32 = 10;
+    const ALTERNATIVES_TO_DRAW: usize = 2;
+    const MINIMAX_DEPTH: Option<u32> = None;
 
-    // let state = "
-    //     ...
-    //     OXX
-    //     ..O";
-    // let game = minimax::tictactoe::TicTacToeGame::from_state(state, Player::O);
-
-    const MAX_DEPTH: i32 = 4;
-    const ALTERNATIVES_TO_DRAW: usize = 3;
-    const MINIMAX_DEPTH: Option<u32> = Some(9);
     let state = "
-    .......
-    .O.X...
-    .XOO...
-    .OXOX..
-    .OXOXX.
-    .OOXXO.";
-    let game = minimax::connect4::Connect4Game::from_state(state, None, Player::X);
+        ...
+        ...
+        ...";
+    let game = minimax::tictactoe::TicTacToeGame::from_state(state, Player::X);
+
+    // const MAX_DEPTH: i32 = 4;
+    // const ALTERNATIVES_TO_DRAW: usize = 3;
+    // const MINIMAX_DEPTH: Option<u32> = Some(9);
+    // let state = "
+    // .......
+    // .O.X...
+    // .XOO...
+    // .OXOX..
+    // .OXOXX.
+    // .OOXXO.";
+    // let game = minimax::connect4::Connect4Game::from_state(state, None, Player::X);
 
     // get the decision tree
     let decision_tree = minimax(&game, MINIMAX_DEPTH);
@@ -91,7 +96,7 @@ fn graph_node(
     let current_node = add_node(
         graph,
         format!("node_{}_{}", depth, node_id),
-        format!("s: {}\n{:?}", decision_tree.score, game),
+        format!("s: {}\n{:?}\na: {} b: {}", decision_tree.score, game, decision_tree.alfa, decision_tree.beta),
         color_node.into(),
     );
 
