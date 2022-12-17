@@ -106,9 +106,12 @@ impl Minimax {
         mut beta: Score, // best for minimizing player
     ) -> NodeType {
         let cache_key = game.get_hash();
-        if self.cache.contains_key(&cache_key) {
-            return self.cache.get(&cache_key).unwrap().clone();
-        }
+        // TODO caching breaks with pruning, not sure how to solve this. see test_doesnt_make_noob_mistake
+        // either make caching optional, as it seems to work better than pruning for tictactoe
+        // or remove completely
+        // if self.cache.contains_key(&cache_key) {
+        //     return self.cache.get(&cache_key).unwrap().clone();
+        // }
 
         let score_eval = game.evaluate_score();
         if score_eval.is_terminal || current_depth >= self.params.max_depth {
