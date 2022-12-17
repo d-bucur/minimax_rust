@@ -69,10 +69,8 @@ impl MinimaxDriver for TicTacToeGame {
         return Player::None;
     }
 
-    fn get_possible_moves(&self) -> Vec<Move> {
-        iproduct!(0..3, 0..3)
-            .filter(|(i, j)| self.board.get(*i, *j) == Player::None)
-            .collect()
+    fn get_possible_moves(&self) -> Box<dyn Iterator<Item = Move> + '_> {
+        Box::new(iproduct!(0..3, 0..3).filter(|(i, j)| self.board.get(*i, *j) == Player::None))
     }
 
     fn apply_move(&self, next_move: Move) -> Box<dyn MinimaxDriver> {
@@ -101,7 +99,7 @@ impl MinimaxDriver for TicTacToeGame {
     }
 
     fn has_ended(&self) -> bool {
-        self.get_winner() != Player::None || self.get_possible_moves().len() == 0
+        self.get_winner() != Player::None || self.get_possible_moves().count() == 0
     }
 }
 
@@ -169,7 +167,7 @@ mod tests {
         O.O
         X.O";
         let game = TicTacToeGame::from_state(state, Player::X);
-        let mut actual = game.get_possible_moves();
+        let mut actual: Vec<Move> = game.get_possible_moves().collect();
         let mut expected = vec![(0, 1), (1, 1), (2, 1)];
         actual.sort();
         expected.sort();

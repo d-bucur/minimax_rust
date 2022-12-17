@@ -7,17 +7,28 @@
 - secondary frontend: export to wasm and hook up to javascript game
 
 # Steps
-- ~~minimax base on tictactoe~~
-- ~~parameters for age and best chance of winning~~
-- ~~setup iai~~
 - ~~cache~~. need to understand how to save and reuse cache for next algorithm calls
-- ~~connect4 working~~
+- compare with python project. do they analyze same amount of nodes? does it still lose in same situations?
 - games in bevy
-- alfa beta pruning
-- symmetry optimization on cache?
 - chess
-- make it work on the graph codinggame game
-- add level adjustment: a driver that will watch player moves and choose an answer in the same range (ie, average to 50% best move out of the ordered scores)
+- symmetry optimization on cache?
+- add level adjustment: a driver that will watch player moves and choose an answer in the same range (ie, average to 50% best move out of the ordered scores). This won't work at all with pruning so maybe drop it
 - monte carlo tree search?
 - compile to wasm, use a js frontend for the game (without bevy)
-- make it work on an RTS (discrete sampling of the game state)
+
+## chess specific
+- moveset implementation. lichess for [reference](https://github.com/lichess-org/scalachess/blob/master/src/main/scala/Actor.scala)
+- heuristics/refactor how score works
+- progressive deepening / reusing the cache 
+- [uneven tree distribution](https://youtu.be/STjW3eH0Cik?t=2644)
+- parallel computing
+- some [details](https://github.com/official-stockfish/Stockfish#a-note-on-classical-evaluation-versus-nnue-evaluation) on the ai of stockfish
+- implement [uci](https://en.wikipedia.org/wiki/Universal_Chess_Interface)
+- publish as [lichess bot](https://lichess.org/player/bots): https://lichess.org/api#tag/Bot  https://lichess.org/@/thibault/blog/how-to-create-a-lichess-bot/FuKyvDuB
+- opening books?
+
+## possible games
+- make it work on the graph codinggame game
+- checkers
+- go
+- an RTS (discrete sampling of the game state)

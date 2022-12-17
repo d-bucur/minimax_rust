@@ -11,7 +11,7 @@ pub type NodeType = Rc<DecisionTreeNode>;
 pub trait MinimaxDriver: core::fmt::Debug {
     fn get_winner(&self) -> Player;
 
-    fn get_possible_moves(&self) -> Vec<Move>; // TODO iterator instead?
+    fn get_possible_moves(&self) -> Box<dyn Iterator<Item = Move> + '_>;
 
     fn apply_move(&self, next_move: Move) -> Box<dyn MinimaxDriver>; // TODO move types should be specific for each game. Can probably use generics here
 
@@ -97,7 +97,7 @@ impl Minimax {
         }
 
         let possible_moves = game.get_possible_moves();
-        let new_states = possible_moves.iter().map(|&m| (m, game.apply_move(m)));
+        let new_states = possible_moves.map(|m| (m, game.apply_move(m)));
 
         // this is where the actual minmax happens!
         let mut best_move = None;
@@ -143,7 +143,6 @@ impl Minimax {
         });
         debug!("Minimax in node: \n{:?}", game);
         debug!("Node: {:?}", node);
-        debug!("Possible moves {:?}", possible_moves.len());
         self.cache.insert(cache_key, node.clone());
         node
     }

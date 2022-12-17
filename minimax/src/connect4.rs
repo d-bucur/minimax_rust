@@ -96,7 +96,7 @@ impl MinimaxDriver for Connect4Game {
                 ((-1, -1), (1, 1)),
                 ((-1, 0), (1, 0)),
                 ((1, -1), (-1, 1)),
-            ]; // TODO hope this gets optimized by compiler and not reallocated on every run. Should profile
+            ];
             for dir in DIRECTIONS {
                 if let Some(winner) = self._search_for_winner(dir.0, dir.1) {
                     return winner;
@@ -106,17 +106,18 @@ impl MinimaxDriver for Connect4Game {
         return Player::None;
     }
 
-    fn get_possible_moves(&self) -> Vec<Move> {
-        (0..WIDTH)
-            .map(|j| {
-                (0..HEIGHT)
-                    .rev()
-                    .zip(repeat(j))
-                    .find(|(i, j)| self.board.get(*i, *j) == Player::None)
-            })
-            .filter(|&p| p.is_some())
-            .map(|p| p.unwrap())
-            .collect()
+    fn get_possible_moves(&self) -> Box<dyn Iterator<Item = Move> + '_> {
+        Box::new(
+            (0..WIDTH)
+                .map(|j| {
+                    (0..HEIGHT)
+                        .rev()
+                        .zip(repeat(j))
+                        .find(|(i, j)| self.board.get(*i, *j) == Player::None)
+                })
+                .filter(|&p| p.is_some())
+                .map(|p| p.unwrap()),
+        )
     }
 
     /// No checks are applied. Assumes that the move has been taken from [`get_possible_moves()`]
@@ -147,7 +148,7 @@ impl MinimaxDriver for Connect4Game {
     }
 
     fn has_ended(&self) -> bool {
-        self.get_winner() != Player::None || self.get_possible_moves().len() == 0
+        self.get_winner() != Player::None || self.get_possible_moves().count() == 0
     }
 }
 
@@ -237,7 +238,7 @@ mod tests {
         .OXOXX.
         .OOXXO.";
         let game = Connect4Game::from_state(state, Some((4, 5)), crate::game::Player::O);
-        let mut actual = game.get_possible_moves();
+        let mut actual: Vec<Move> = game.get_possible_moves().collect();
         let mut expected = vec![(5, 0), (0, 1), (1, 2), (0, 3), (2, 4), (3, 5), (5, 6)];
         actual.sort();
         expected.sort();
