@@ -5,7 +5,8 @@ use tracing::*;
 use crate::game::*;
 
 pub type GameHash = u128; // this won't be enough for chess for example
-// TODO extract types like this
+pub type Score = i32;
+pub type NodeType = Rc<DecisionTreeNode>;
 
 pub trait MinimaxDriver: core::fmt::Debug {
     fn get_winner(&self) -> Player;
@@ -23,11 +24,12 @@ pub trait MinimaxDriver: core::fmt::Debug {
 
 #[derive(Default)]
 pub struct DecisionTreeNode {
-    pub score: i32,
-    pub moves: HashMap<Move, Rc<DecisionTreeNode>>, // TODO can moves be a vector instead?
+    pub score: Score,
+    pub moves: HashMap<Move, NodeType>, // TODO can moves be a vector instead?
     pub best_move: Option<Move>,
-    pub alfa: i32,   // TODO only for debug
-    pub beta: i32,
+    // TODO only for debug
+    pub alfa: Score,
+    pub beta: Score,
 }
 
 impl DecisionTreeNode {
@@ -36,115 +38,119 @@ impl DecisionTreeNode {
     }
 }
 
-// TODO make struct and keep around stuff like the cache and visit count
-// TODO extract params into struct with defaults
-// TOOD maybe use generic instead of dynamic dispatch
-pub fn minimax(game: &dyn MinimaxDriver, max_depth: Option<u32>) -> Rc<DecisionTreeNode> {
-    let mut cache: HashMap<GameHash, Rc<DecisionTreeNode>> = HashMap::new();
-    // TODO suboptimal breaks the pruning if too high, and way slower
-    // disabling depth factor is also slightly faster
-    _minimax(game, 0, 0.99, max_depth, 0.0, &mut cache, i32::MIN, i32::MAX)  
+pub struct Minimax {
+    pub max_depth: u32,
+    pub max_score: Score,
+    pub depth_factor: f32,
+    pub weight_suboptimal: f32,
+    pub cache: HashMap<GameHash, NodeType>,
 }
 
-// TODO profile with struct values instead of passing constant params
-fn _minimax(
-    game: &dyn MinimaxDriver,
-    current_depth: u32,
-    depth_factor: f32,  // is constant
-    max_depth: Option<u32>,  // is constant TODO just u32 with highest number
-    weight_suboptimal: f32,  // is constant
-    cache: &mut HashMap<GameHash, Rc<DecisionTreeNode>>,  // ref is constant
-    mut alfa: i32,  // best for maximizing player 
-    mut beta: i32,   // best for minimizing player
-) -> Rc<DecisionTreeNode> {
-    let cache_key = game.get_hash();
-    if cache.contains_key(&cache_key) {
-        return cache.get(&cache_key).unwrap().clone();
+impl Default for Minimax {
+    fn default() -> Self {
+        Self {
+            max_score: 1000,
+            max_depth: 100,
+            depth_factor: 0.99,
+            weight_suboptimal: 0.,
+            cache: Default::default(),
+        }
     }
-    let winner = game.get_winner();
-    if winner != Player::None {
-        let score_multiplier = winner.score_multiplier();
-        const MAX_SCORE: i32 = 1000;
+}
+
+impl Minimax {
+    // TOOD maybe use generic instead of dynamic dispatch
+    pub fn minimax(&mut self, game: &dyn MinimaxDriver) -> NodeType {
+        // TODO suboptimal breaks the pruning if too high, and way slower
+        // disabling depth factor is also slightly faster
+        self._minimax(game, 0, Score::MIN, Score::MAX)
+    }
+
+    fn _minimax(
+        &mut self,
+        game: &dyn MinimaxDriver,
+        current_depth: u32,
+        mut alfa: Score, // best for maximizing player
+        mut beta: Score, // best for minimizing player
+    ) -> NodeType {
+        let cache_key = game.get_hash();
+        if self.cache.contains_key(&cache_key) {
+            return self.cache.get(&cache_key).unwrap().clone();
+        }
+        let winner = game.get_winner();
+        if winner != Player::None {
+            let score_multiplier = winner.score_multiplier();
+            let node = Rc::new(DecisionTreeNode {
+                score: score_multiplier * self.max_score,
+                ..Default::default()
+            });
+            self.cache.insert(cache_key, node.clone());
+            return node;
+        }
+
+        if current_depth >= self.max_depth {
+            let node = Rc::new(DecisionTreeNode {
+                ..Default::default()
+            });
+            self.cache.insert(cache_key, node.clone());
+            return node;
+        }
+
+        let possible_moves = game.get_possible_moves();
+        let new_states = possible_moves.iter().map(|&m| (m, game.apply_move(m)));
+
+        // this is where the actual minmax happens!
+        let mut best_move = None;
+        let mut best_value = 0;
+        let mut suboptimal_value = 0.;
+        let mut analized_moves = 0;
+        let score_multiplier = game.get_current_player().score_multiplier();
+        let mut child_results_map: HashMap<(usize, usize), NodeType> = Default::default();
+
+        for (pos, game) in new_states {
+            let node_eval = self._minimax(game.as_ref(), current_depth + 1, alfa, beta);
+            if node_eval.score * score_multiplier >= best_value || best_move.is_none() {
+                best_move = Some(pos);
+                best_value = node_eval.score * score_multiplier;
+            }
+            suboptimal_value += node_eval.score as f32;
+            if score_multiplier > 0 {
+                alfa = std::cmp::max(alfa, node_eval.score)
+            } else {
+                beta = std::cmp::min(beta, node_eval.score)
+            }
+            child_results_map.insert(pos, node_eval);
+
+            // break early to prune solutions that will never be taken
+            if beta <= alfa {
+                // trace!("Pruning {}, {}", alfa, beta);
+                break;
+            }
+            analized_moves += 1;
+        }
+        if analized_moves > 0 {
+            suboptimal_value /= analized_moves as f32;
+        }
+
         let node = Rc::new(DecisionTreeNode {
-            score: score_multiplier * MAX_SCORE,
-            ..Default::default()
+            best_move: best_move,
+            score: (((best_value * score_multiplier) as f32 * (1. - self.weight_suboptimal)
+                + suboptimal_value * self.weight_suboptimal)
+                * self.depth_factor) as Score,
+            moves: child_results_map,
+            alfa: alfa,
+            beta: beta,
         });
-        cache.insert(cache_key, node.clone());
-        return node;
+        debug!("Minimax in node: \n{:?}", game);
+        debug!("Node: {:?}", node);
+        debug!("Possible moves {:?}", possible_moves.len());
+        self.cache.insert(cache_key, node.clone());
+        node
     }
-
-    if current_depth >= max_depth.unwrap_or(1000) {
-        let node = Rc::new(DecisionTreeNode {
-            ..Default::default()
-        });
-        cache.insert(cache_key, node.clone());
-        return node;
-    }
-
-    let possible_moves = game.get_possible_moves();
-    let new_states = possible_moves.iter().map(|&m| (m, game.apply_move(m)));
-
-    // this is where the actual minmax happens!
-    let mut best_move = None;
-    let mut best_value = 0;
-    let mut suboptimal_value = 0.;
-    let mut analized_moves = 0;
-    let score_multiplier = game.get_current_player().score_multiplier();
-    let mut child_results_map: HashMap<(usize, usize), Rc<DecisionTreeNode>> = Default::default();
-
-    for (pos, game) in new_states {
-        let node_eval = _minimax(
-            game.as_ref(),
-            current_depth + 1,
-            depth_factor,
-            max_depth,
-            weight_suboptimal,
-            cache,
-            alfa,
-            beta
-        );
-        if node_eval.score * score_multiplier >= best_value || best_move.is_none() {
-            best_move = Some(pos);
-            best_value = node_eval.score * score_multiplier;
-        }
-        suboptimal_value += node_eval.score as f32;
-        if score_multiplier > 0 {
-            alfa = std::cmp::max(alfa, node_eval.score)
-        } else {
-            beta = std::cmp::min(beta, node_eval.score)
-        }
-        child_results_map.insert(pos, node_eval);
-
-        // break early to prune solutions that will never be taken
-        if beta <= alfa {
-            // trace!("Pruning {}, {}", alfa, beta);
-            break;
-        }
-        analized_moves += 1;
-    }
-    if analized_moves > 0 {
-        suboptimal_value /= analized_moves as f32;
-    }
-
-    let node = Rc::new(DecisionTreeNode {
-        best_move: best_move,
-        score: (((best_value * score_multiplier) as f32 * (1. - weight_suboptimal)
-            + suboptimal_value * weight_suboptimal)
-            * depth_factor) as i32,
-        moves: child_results_map,
-        alfa: alfa,
-        beta: beta,
-    });
-    debug!("Minimax in node: \n{:?}", game);
-    debug!("Node: {:?}", node);
-    debug!("Possible moves {:?}", possible_moves.len());
-    debug!("-------------");
-    cache.insert(cache_key, node.clone());
-    node
 }
 
 impl Player {
-    pub fn score_multiplier(&self) -> i32 {
+    pub fn score_multiplier(&self) -> Score {
         match &self {
             Player::X => 1,
             Player::O => -1,

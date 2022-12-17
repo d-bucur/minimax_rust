@@ -183,17 +183,23 @@ mod tests {
         X.O
         O.O";
         let game = TicTacToeGame::from_state(state, Player::X);
-        let node = minimax(&game, None);
+        let mut minimax = Minimax {
+            ..Default::default()
+        };
+        let node = minimax.minimax(&game);
         assert!([Some((0, 1)), Some((1, 1))].contains(&node.get_best_move()));
 
         let game = TicTacToeGame::from_state(state, Player::O);
-        let node = minimax(&game, None);
+        let node = minimax.minimax(&game);
         assert_eq!(Some((2, 1)), node.get_best_move());
     }
 
     fn play(game: TicTacToeGame) -> (Box<dyn MinimaxDriver>, i32) {
         let mut moves = 0;
-        let mut decision_node = minimax(&game, None);
+        let mut minimax = Minimax {
+            ..Default::default()
+        };
+        let mut decision_node = minimax.minimax(&game);
         let mut new_game = Box::new(game) as Box<dyn MinimaxDriver>;
         while decision_node.best_move.is_some() {
             let next_move = decision_node.best_move.unwrap();

@@ -3,25 +3,26 @@ use std::{fs::File, io::Write, rc::Rc};
 use graphviz_rust::{cmd::CommandArg, dot_structures::*, printer::PrinterContext};
 use minimax::{
     game::*,
-    minimax::{minimax, DecisionTreeNode, MinimaxDriver},
+    minimax::{DecisionTreeNode, Minimax, MinimaxDriver},
 };
 
 fn main() -> std::io::Result<()> {
     let collector = tracing_subscriber::fmt()
-    .with_max_level(tracing::Level::INFO)
-    .finish();
+        .with_max_level(tracing::Level::INFO)
+        .finish();
     tracing::subscriber::set_global_default(collector).unwrap();
 
     // graph parameters
     const MAX_DEPTH: i32 = 10;
     const ALTERNATIVES_TO_DRAW: usize = 2;
-    const MINIMAX_DEPTH: Option<u32> = None;
-
     let state = "
         ...
         ...
         ...";
     let game = minimax::tictactoe::TicTacToeGame::from_state(state, Player::X);
+    let mut minimax = Minimax {
+        ..Default::default()
+    };
 
     // const MAX_DEPTH: i32 = 4;
     // const ALTERNATIVES_TO_DRAW: usize = 3;
@@ -36,7 +37,7 @@ fn main() -> std::io::Result<()> {
     // let game = minimax::connect4::Connect4Game::from_state(state, None, Player::X);
 
     // get the decision tree
-    let decision_tree = minimax(&game, MINIMAX_DEPTH);
+    let decision_tree = minimax.minimax(&game);
 
     // build the graph
     let mut graph = make_graph();
@@ -96,7 +97,10 @@ fn graph_node(
     let current_node = add_node(
         graph,
         format!("node_{}_{}", depth, node_id),
-        format!("s: {}\n{:?}\na: {} b: {}", decision_tree.score, game, decision_tree.alfa, decision_tree.beta),
+        format!(
+            "s: {}\n{:?}\na: {} b: {}",
+            decision_tree.score, game, decision_tree.alfa, decision_tree.beta
+        ),
         color_node.into(),
     );
 

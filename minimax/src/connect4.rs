@@ -122,7 +122,9 @@ impl MinimaxDriver for Connect4Game {
     /// No checks are applied. Assumes that the move has been taken from [`get_possible_moves()`]
     fn apply_move(&self, next_move: Move) -> Box<dyn MinimaxDriver> {
         let mut new_game = Box::new(self.clone());
-        new_game.board.set(next_move.0, next_move.1, self.current_player);
+        new_game
+            .board
+            .set(next_move.0, next_move.1, self.current_player);
         new_game.current_player = self.current_player.next();
         new_game.last_move = Some(next_move);
         return new_game;
@@ -130,7 +132,9 @@ impl MinimaxDriver for Connect4Game {
 
     fn get_hash(&self) -> GameHash {
         // let grid_values = self.board.iter().flat_map(|r| r.iter().map(|p| p));
-        let mut hash: u128 = self.board.iter()
+        let mut hash: u128 = self
+            .board
+            .iter()
             .zip(1..43)
             .map(|(val, pos)| (*val as u128) * 4u128.pow(pos))
             .sum();
@@ -171,8 +175,9 @@ impl Default for Connect4Game {
 
 #[cfg(test)]
 mod tests {
+    use crate::minimax::Minimax;
+
     use super::*;
-    use crate::minimax::minimax;
     use rstest::*;
 
     #[rstest]
@@ -241,6 +246,10 @@ mod tests {
 
     #[test]
     fn test_winning_moves_one_turn() {
+        let mut minimax = Minimax {
+            max_depth: 1,
+            ..Default::default()
+        };
         let state = "
         .......
         .O.X...
@@ -249,7 +258,7 @@ mod tests {
         .OXOXX.
         .OOXXO.";
         let game = Connect4Game::from_state(state, Some((4, 5)), crate::game::Player::X);
-        let node = minimax(&game, Some(1));
+        let node = minimax.minimax(&game);
         assert_eq!(node.get_best_move(), Some((2, 4)));
     }
 }
