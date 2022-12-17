@@ -10,33 +10,31 @@ fn main() -> std::io::Result<()> {
         .finish();
     tracing::subscriber::set_global_default(collector).unwrap();
 
-    // graph parameters
     // tic tac toe setup
-    // const MAX_DEPTH: i32 = 10;
-    // const ALTERNATIVES_TO_DRAW: usize = 2;
+    // const MAX_DEPTH: i32 = 5;
+    // const ALTERNATIVES_TO_DRAW: usize = 4;
     // let state = "
-    //     ...
-    //     ...
-    //     ...";
-    // let game = minimax::tictactoe::TicTacToeGame::from_state(state, Player::X);
+    // X..
+    // .O.
+    // ..X";
+    // let game = minimax::tictactoe::TicTacToeGame::from_state(state, Player::O);
     // let mut minimax = Minimax::new(MinimaxParams::default());
 
     // connect 4 setup
-    const MAX_DEPTH: i32 = 4;
-    const ALTERNATIVES_TO_DRAW: usize = 3;
+    const MAX_DEPTH: i32 = 7;
+    const ALTERNATIVES_TO_DRAW: usize = 0;
     let mut minimax = Minimax::new(MinimaxParams {
-        max_depth: 9,
+        max_depth: 7,
         ..Default::default()
     });
-    let state = "
+        let state = "
         .......
-        .O.X...
-        .XOO...
-        .OXOX..
-        .OXOXX.
-        .OOXXO.";
+        .......
+        ..X....
+        X.O....
+        O.X....
+        XXOOOXO";
     let game = minimax::connect4::Connect4Game::from_state(state, None, Player::X);
-
 
     // get the decision tree
     let decision_tree = minimax.minimax(&game);
@@ -89,6 +87,7 @@ fn graph_tree(
         max_depth,
         &mut 0,
         alternatives_to_draw,
+        4,  // pretty hacky, doesn't work if pruned
     );
 }
 
@@ -100,6 +99,7 @@ fn graph_node(
     max_depth: i32,
     node_id: &mut i32,
     alternatives_to_draw: usize,
+    draw_all_at_depth: i32
 ) -> Option<NodeId> {
     if depth > max_depth {
         return None;
@@ -109,8 +109,8 @@ fn graph_node(
         graph,
         format!("node_{}_{}", depth, node_id),
         format!(
-            "s: {}\n{:?}\na: {} b: {}",
-            decision_tree.score, game, decision_tree.alfa, decision_tree.beta
+            "sc: {} de: {}\n{:?}\na: {} b: {}",
+            decision_tree.score, depth, game, decision_tree.alfa, decision_tree.beta
         ),
         color_node.into(),
     );
@@ -140,9 +140,14 @@ fn graph_node(
         let new_best_idx = (best_move_idx + 1) % all_moves.len();
         all_moves.swap(0, new_best_idx);
     }
+    let selected_alternatives = if draw_all_at_depth == depth {
+        1000
+    } else {
+        alternatives_to_draw
+    };
 
     // draw nodes ordered by score
-    for (m, tree_node) in all_moves.into_iter().take(1 + alternatives_to_draw) {
+    for (m, tree_node) in all_moves.into_iter().take(1 + selected_alternatives) {
         let new_game = game.apply_move(m);
         let child_node = graph_node(
             graph,
@@ -152,6 +157,7 @@ fn graph_node(
             max_depth,
             node_id,
             alternatives_to_draw,
+            draw_all_at_depth
         );
         let (color_edge, is_heavy) = if decision_tree.best_move.unwrap() == m {
             (get_player_color(game.get_current_player()), true)

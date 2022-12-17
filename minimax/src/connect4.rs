@@ -13,6 +13,7 @@ pub struct Connect4Game {
 }
 
 impl Connect4Game {
+    /// Does not validate if the state is correct or reachable (ie might have board filled with X)
     pub fn from_state(board_str: &str, last_move: Option<Move>, current_player: Player) -> Self {
         let mut game = Connect4Game::default();
         game.current_player = current_player;
@@ -45,7 +46,7 @@ impl Connect4Game {
             last_move.1 as i32 + dir_more.1,
         );
         let mut width = 1;
-        while width < 5 && a.1 > 0 && a.0 > 0 && a.0 < HEIGHT as i32 {
+        while width < 5 && a.1 >= 0 && a.0 >= 0 && a.0 < HEIGHT as i32 {
             if self.board.get(a.0 as usize, a.1 as usize) != last_player {
                 break;
             }
@@ -53,7 +54,7 @@ impl Connect4Game {
             a.0 += dir_less.0;
             a.1 += dir_less.1;
         }
-        while width < 5 && b.1 < WIDTH as i32 && b.0 > 0 && b.0 < HEIGHT as i32 {
+        while width < 5 && b.1 < WIDTH as i32 && b.0 >= 0 && b.0 < HEIGHT as i32 {
             if self.board.get(b.0 as usize, b.1 as usize) != last_player {
                 break;
             }
@@ -89,10 +90,10 @@ impl MinimaxDriver for Connect4Game {
     fn get_winner(&self) -> Player {
         if let Some(_) = self.last_move {
             const DIRECTIONS: [((i32, i32), (i32, i32)); 4] = [
-                ((0, -1), (0, 1)),
-                ((-1, -1), (1, 1)),
-                ((-1, 0), (1, 0)),
-                ((1, -1), (-1, 1)),
+                ((0, -1), (0, 1)),  // horizontal search
+                ((-1, -1), (1, 1)), // diagonal \
+                ((-1, 0), (1, 0)),  // vertical search
+                ((1, -1), (-1, 1)), // diagonal /
             ];
             for dir in DIRECTIONS {
                 if let Some(winner) = self._search_for_winner(dir.0, dir.1) {
@@ -176,7 +177,7 @@ impl Debug for Connect4Game {
             }
             writeln!(f)?;
         }
-        write!(f, "next: {:?}", &self.current_player)
+        write!(f, "nx: {:?}\nls: {:?}", &self.current_player, &self.last_move)
     }
 }
 
@@ -238,6 +239,16 @@ mod tests {
         .OOXX..",
         Some((4, 3))
     )]
+    #[case(
+        "
+        . . . . . . .
+        O . . . . . .
+        X . . . . . .
+        X X . . . . .
+        X X X O X . O
+        O O O X X O O",
+        Some((4, 2))
+    )]
     fn test_winner_is_detected(#[case] board_str: &str, #[case] last_move: Option<Move>) {
         let game = Connect4Game::from_state(board_str, last_move, crate::game::Player::O);
         println!("{:?}", game);
@@ -261,8 +272,10 @@ mod tests {
         assert_eq!(actual, expected);
     }
 
+    // see https://sites.math.rutgers.edu/~zeilberg/C4/Introduction.html
+    // for more win in x puzzles
     #[test]
-    fn test_winning_moves_one_turn() {
+    fn test_win_in_one() {
         let mut minimax = Minimax::new(MinimaxParams {
             max_depth: 1,
             ..Default::default()
@@ -279,5 +292,81 @@ mod tests {
         assert_eq!(node.get_best_move(), Some((2, 4)));
     }
 
-    // TODO test with longer winning moves
+    // TODO repeat of ttt test. refactor
+    fn play(game: Connect4Game, depth: u32) -> (Box<dyn MinimaxDriver>, i32) {
+        let mut moves = 0;
+        let mut minimax = Minimax::new(MinimaxParams {
+            max_depth: depth,
+            ..Default::default()
+        });
+        let mut decision_node = minimax.minimax(&game);
+        let mut new_game = Box::new(game) as Box<dyn MinimaxDriver>;
+        while decision_node.best_move.is_some() {
+            let next_move = decision_node.best_move.unwrap();
+            new_game = new_game.apply_move(next_move);
+            decision_node = decision_node.moves.get(&next_move).unwrap().clone();
+            moves += 1;
+        }
+        return (new_game, moves);
+    }
+
+    #[test]
+    fn test_win_in_two() {
+        let state = "
+        .......
+        .......
+        .......
+        XX.....
+        XX.OX.O
+        OOOXXOO";
+        let game = Connect4Game::from_state(state, None, crate::game::Player::X);
+        let (final_game, moves) = play(game, 7);
+        assert_eq!(final_game.get_winner(), Player::X);
+        assert_eq!(moves, 3);
+    }
+
+    #[test]
+    fn test_win_in_three() {
+        let state = "
+        .......
+        .......
+        ..X....
+        X.O....
+        O.X....
+        XXOOOXO";
+        let game = Connect4Game::from_state(state, None, crate::game::Player::X);
+        let (final_game, moves) = play(game, 7);
+        assert_eq!(final_game.get_winner(), Player::X);
+        // assert_eq!(moves, 5); // TODO pruning does not always select the shortest path
+    }
+
+    #[test]
+    fn test_win_in_four() {
+        let state = "
+        .......
+        .......
+        .......
+        .O..OXO
+        OX.XXXO
+        XO.OXOX";
+        let game = Connect4Game::from_state(state, None, crate::game::Player::X);
+        let (final_game, moves) = play(game, 9);
+        assert_eq!(final_game.get_winner(), Player::X);
+        // assert_eq!(moves, 7); // TODO pruning does not always select the shortest path
+    }
+
+    #[test]
+    fn test_win_in_five() {
+        let state = "
+        .......
+        .......
+        .......
+        .....X.
+        .XOOXO.
+        .XXOOXO";
+        let game = Connect4Game::from_state(state, None, crate::game::Player::X);
+        let (final_game, moves) = play(game, 9);
+        assert_eq!(final_game.get_winner(), Player::X);
+        assert_eq!(moves, 9);
+    }
 }

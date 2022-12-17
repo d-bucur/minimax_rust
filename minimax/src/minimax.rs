@@ -49,14 +49,18 @@ pub struct MinimaxParams {
     pub max_depth: u32,
     pub depth_factor: f32,
     pub weight_suboptimal: f32,
+    pub cache_enabled: bool,
+    pub pruning_enabled: bool,
 }
 
 impl Default for MinimaxParams {
     fn default() -> Self {
         Self {
             max_depth: 12,
-            depth_factor: 0.99,
+            depth_factor: 0.98,
             weight_suboptimal: 0.,
+            cache_enabled: false,
+            pruning_enabled: true,
         }
     }
 }
@@ -109,9 +113,9 @@ impl Minimax {
         // TODO caching breaks with pruning, not sure how to solve this. see test_doesnt_make_noob_mistake
         // either make caching optional, as it seems to work better than pruning for tictactoe
         // or remove completely
-        // if self.cache.contains_key(&cache_key) {
-        //     return self.cache.get(&cache_key).unwrap().clone();
-        // }
+        if self.params.cache_enabled && self.cache.contains_key(&cache_key) {
+            return self.cache.get(&cache_key).unwrap().clone();
+        }
 
         let score_eval = game.evaluate_score();
         if score_eval.is_terminal || current_depth >= self.params.max_depth {
@@ -147,7 +151,7 @@ impl Minimax {
 
             analized_moves += 1;
             // break early to prune solutions that will never be taken
-            if beta <= alfa {
+            if self.params.pruning_enabled && beta <= alfa {
                 // trace!("Pruning {}, {}", alfa, beta);
                 break;
             }
