@@ -147,6 +147,25 @@ impl MinimaxDriver for Connect4Game {
     fn has_ended(&self) -> bool {
         self.get_winner() != Player::None || self.get_possible_moves().count() == 0
     }
+
+    fn evaluate_score(&self) -> EvaluationScore {
+        match self.get_winner() {
+            Player::None => EvaluationScore {
+                score: 0,
+                // Not sure that it's not terminal, could be a draw, but since the minimax function
+                // will iterate over possible moves this shouldn't be an issue 
+                is_terminal: false,
+            },
+            Player::X => EvaluationScore {
+                score: 1000,
+                is_terminal: true,
+            },
+            Player::O => EvaluationScore {
+                score: -1000,
+                is_terminal: true,
+            },
+        }
+    }
 }
 
 impl Debug for Connect4Game {

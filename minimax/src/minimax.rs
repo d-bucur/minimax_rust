@@ -8,16 +8,23 @@ pub type GameHash = u128; // this won't be enough for chess for example
 pub type Score = i32;
 pub type NodeType = Rc<DecisionTreeNode>;
 
-pub trait MinimaxDriver: core::fmt::Debug {
-    fn get_winner(&self) -> Player;
+pub struct EvaluationScore {
+    pub score: Score,
+    pub is_terminal: bool,
+}
 
-    fn get_possible_moves(&self) -> Box<dyn Iterator<Item = Move> + '_>;
+pub trait MinimaxDriver: core::fmt::Debug {
+    fn get_winner(&self) -> Player; // TODO remove from trait, not needed anymore
+
+    fn evaluate_score(&self) -> EvaluationScore;
+
+    fn get_possible_moves(&self) -> Box<dyn Iterator<Item = Move> + '_>; // TODO should move into evaluation to avoid doing it twice
 
     fn apply_move(&self, next_move: Move) -> Box<dyn MinimaxDriver>; // TODO move types should be specific for each game. Can probably use generics here
 
     fn get_hash(&self) -> GameHash; // TODO can't implement Hash because it is not object safe
 
-    fn get_current_player(&self) -> Player;
+    fn get_current_player(&self) -> Player; // TODO only needed to know if maximizing player or minimizing player. maybe better to abstract this somehow?
 
     fn has_ended(&self) -> bool; // TODO not used at all?
 }
@@ -40,7 +47,6 @@ impl DecisionTreeNode {
 
 pub struct MinimaxParams {
     pub max_depth: u32,
-    pub max_score: Score,
     pub depth_factor: f32,
     pub weight_suboptimal: f32,
 }
@@ -48,7 +54,6 @@ pub struct MinimaxParams {
 impl Default for MinimaxParams {
     fn default() -> Self {
         Self {
-            max_score: 1000,
             max_depth: 12,
             depth_factor: 0.99,
             weight_suboptimal: 0.,
@@ -104,29 +109,18 @@ impl Minimax {
         if self.cache.contains_key(&cache_key) {
             return self.cache.get(&cache_key).unwrap().clone();
         }
-        let winner = game.get_winner();
-        if winner != Player::None {
-            let score_multiplier = winner.score_multiplier();
+
+        let score_eval = game.evaluate_score();
+        if score_eval.is_terminal || current_depth >= self.params.max_depth {
             let node = Rc::new(DecisionTreeNode {
-                score: score_multiplier * self.params.max_score,
+                score: score_eval.score,
                 ..Default::default()
             });
             self.cache.insert(cache_key, node.clone());
             return node;
         }
 
-        if current_depth >= self.params.max_depth {
-            let node = Rc::new(DecisionTreeNode {
-                ..Default::default()
-            });
-            self.cache.insert(cache_key, node.clone());
-            return node;
-        }
-
-        let possible_moves = game.get_possible_moves();
-        let new_states = possible_moves.map(|m| (m, game.apply_move(m)));
-
-        // this is where the actual minmax happens!
+        let new_states = game.get_possible_moves().map(|m| (m, game.apply_move(m)));
         let mut best_move = None;
         let mut best_value = 0;
         let mut suboptimal_value = 0.;
@@ -148,12 +142,12 @@ impl Minimax {
             }
             child_results_map.insert(pos, node_eval);
 
+            analized_moves += 1;
             // break early to prune solutions that will never be taken
             if beta <= alfa {
                 // trace!("Pruning {}, {}", alfa, beta);
                 break;
             }
-            analized_moves += 1;
         }
         if analized_moves > 0 {
             suboptimal_value /= analized_moves as f32;
@@ -161,12 +155,19 @@ impl Minimax {
 
         self.nodes_examined_total += 1;
 
+        let score_final = if analized_moves == 0 {
+            // could this break when using heuristics?
+            score_eval.score
+        } else {
+            (((best_value * score_multiplier) as f32 * (1. - self.params.weight_suboptimal)
+                + suboptimal_value * self.params.weight_suboptimal)
+                * self.params.depth_factor) as Score
+        };
+
         // return the tree node
         let node = Rc::new(DecisionTreeNode {
             best_move: best_move,
-            score: (((best_value * score_multiplier) as f32 * (1. - self.params.weight_suboptimal)
-                + suboptimal_value * self.params.weight_suboptimal)
-                * self.params.depth_factor) as Score,
+            score: score_final,
             moves: child_results_map,
             alfa: alfa,
             beta: beta,

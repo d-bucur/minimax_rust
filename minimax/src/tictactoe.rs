@@ -101,6 +101,25 @@ impl MinimaxDriver for TicTacToeGame {
     fn has_ended(&self) -> bool {
         self.get_winner() != Player::None || self.get_possible_moves().count() == 0
     }
+
+    fn evaluate_score(&self) -> EvaluationScore {
+        match self.get_winner() {
+            Player::None => EvaluationScore {
+                score: 0,
+                // Not sure that it's not terminal, could be a draw, but since the minimax function
+                // will iterate over possible moves this shouldn't be an issue 
+                is_terminal: false,
+            },
+            Player::X => EvaluationScore {
+                score: 1000,
+                is_terminal: true,
+            },
+            Player::O => EvaluationScore {
+                score: -1000,
+                is_terminal: true,
+            },
+        }
+    }
 }
 
 impl Debug for TicTacToeGame {
@@ -186,6 +205,7 @@ mod tests {
         assert!([Some((0, 1)), Some((1, 1))].contains(&node.get_best_move()));
 
         let game = TicTacToeGame::from_state(state, Player::O);
+        let mut minimax = Minimax::new(MinimaxParams::default());
         let node = minimax.minimax(&game);
         assert_eq!(Some((2, 1)), node.get_best_move());
     }
