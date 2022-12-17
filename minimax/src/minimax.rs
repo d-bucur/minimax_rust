@@ -38,23 +38,47 @@ impl DecisionTreeNode {
     }
 }
 
-pub struct Minimax {
+pub struct MinimaxParams {
     pub max_depth: u32,
     pub max_score: Score,
     pub depth_factor: f32,
     pub weight_suboptimal: f32,
-    pub cache: HashMap<GameHash, NodeType>,
 }
 
-impl Default for Minimax {
+impl Default for MinimaxParams {
     fn default() -> Self {
         Self {
             max_score: 1000,
-            max_depth: 100,
+            max_depth: 12,
             depth_factor: 0.99,
             weight_suboptimal: 0.,
-            cache: Default::default(),
         }
+    }
+}
+
+pub struct Minimax {
+    params: MinimaxParams,
+    cache: HashMap<GameHash, NodeType>,
+    nodes_examined_total: u128, // very optimistic size, would probably run out of memory before that
+    nodes_examined_last_run: u128,
+}
+
+impl Minimax {
+    pub fn new(params: MinimaxParams) -> Self {
+        Self {
+            params: params,
+            cache: Default::default(),
+            nodes_examined_last_run: 0,
+            nodes_examined_total: 0,
+        }
+    }
+
+    pub fn get_internal_stats(&self) -> (u128, u128, usize) {
+        (
+            self.nodes_examined_total,
+            self.nodes_examined_last_run,
+            self.cache.len(),
+        )
     }
 }
 
@@ -63,7 +87,10 @@ impl Minimax {
     pub fn minimax(&mut self, game: &dyn MinimaxDriver) -> NodeType {
         // TODO suboptimal breaks the pruning if too high, and way slower
         // disabling depth factor is also slightly faster
-        self._minimax(game, 0, Score::MIN, Score::MAX)
+        let previous_total = self.nodes_examined_total;
+        let res = self._minimax(game, 0, Score::MIN, Score::MAX);
+        self.nodes_examined_last_run = self.nodes_examined_total - previous_total;
+        res
     }
 
     fn _minimax(
@@ -81,14 +108,14 @@ impl Minimax {
         if winner != Player::None {
             let score_multiplier = winner.score_multiplier();
             let node = Rc::new(DecisionTreeNode {
-                score: score_multiplier * self.max_score,
+                score: score_multiplier * self.params.max_score,
                 ..Default::default()
             });
             self.cache.insert(cache_key, node.clone());
             return node;
         }
 
-        if current_depth >= self.max_depth {
+        if current_depth >= self.params.max_depth {
             let node = Rc::new(DecisionTreeNode {
                 ..Default::default()
             });
@@ -132,17 +159,24 @@ impl Minimax {
             suboptimal_value /= analized_moves as f32;
         }
 
+        self.nodes_examined_total += 1;
+
+        // return the tree node
         let node = Rc::new(DecisionTreeNode {
             best_move: best_move,
-            score: (((best_value * score_multiplier) as f32 * (1. - self.weight_suboptimal)
-                + suboptimal_value * self.weight_suboptimal)
-                * self.depth_factor) as Score,
+            score: (((best_value * score_multiplier) as f32 * (1. - self.params.weight_suboptimal)
+                + suboptimal_value * self.params.weight_suboptimal)
+                * self.params.depth_factor) as Score,
             moves: child_results_map,
             alfa: alfa,
             beta: beta,
         });
         debug!("Minimax in node: \n{:?}", game);
         debug!("Node: {:?}", node);
+        // TODO big bug for progressive deepening: cache size is bigger than examined nodes.
+        // the cache will keep nodes that have been pruned away, but the result might change based on what the root node is, and thus the starting move
+        // cache could be invalidated on each run as a simple solution, but maybe some cache values on the selected branches can be kept
+        // need to dive deeper into this
         self.cache.insert(cache_key, node.clone());
         node
     }

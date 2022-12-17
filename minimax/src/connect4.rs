@@ -1,9 +1,6 @@
 use std::{fmt::Debug, iter::repeat};
 
-use crate::{
-    game::*,
-    minimax::{GameHash, MinimaxDriver},
-};
+use crate::{game::*, minimax::*};
 
 const WIDTH: usize = 7;
 const HEIGHT: usize = 6;
@@ -247,10 +244,10 @@ mod tests {
 
     #[test]
     fn test_winning_moves_one_turn() {
-        let mut minimax = Minimax {
+        let mut minimax = Minimax::new(MinimaxParams {
             max_depth: 1,
             ..Default::default()
-        };
+        });
         let state = "
         .......
         .O.X...
@@ -262,4 +259,6 @@ mod tests {
         let node = minimax.minimax(&game);
         assert_eq!(node.get_best_move(), Some((2, 4)));
     }
+
+    // TODO test with longer winning moves
 }

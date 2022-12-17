@@ -38,9 +38,7 @@ fn make_move(
     mut state_changed_event: EventWriter<GameStateChangedEvent>,
     mut game: ResMut<GameResource>,
 ) {
-    let mut minimax = Minimax {
-        ..Default::default()
-    }; // TODO should reuse
+    let mut minimax = Minimax::new(MinimaxParams::default()); // TODO should reuse
     let best_move = minimax.minimax(&game.0).best_move;
     println!("Best move: {:?}", best_move);
     if let Some(best_move) = best_move {

@@ -26,6 +26,7 @@
 - implement [uci](https://en.wikipedia.org/wiki/Universal_Chess_Interface)
 - publish as [lichess bot](https://lichess.org/player/bots): https://lichess.org/api#tag/Bot  https://lichess.org/@/thibault/blog/how-to-create-a-lichess-bot/FuKyvDuB
 - opening books?
+- [example](https://github.com/adam-mcdaniel/chess-engine/blob/main/src/lib.rs) chess engine in rust
 
 ## possible games
 - make it work on the graph codinggame game

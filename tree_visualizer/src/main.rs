@@ -1,10 +1,8 @@
 use std::{fs::File, io::Write, rc::Rc};
 
 use graphviz_rust::{cmd::CommandArg, dot_structures::*, printer::PrinterContext};
-use minimax::{
-    game::*,
-    minimax::{DecisionTreeNode, Minimax, MinimaxDriver},
-};
+use minimax::{game::*, minimax::*};
+use tracing::info;
 
 fn main() -> std::io::Result<()> {
     let collector = tracing_subscriber::fmt()
@@ -13,28 +11,32 @@ fn main() -> std::io::Result<()> {
     tracing::subscriber::set_global_default(collector).unwrap();
 
     // graph parameters
-    const MAX_DEPTH: i32 = 10;
-    const ALTERNATIVES_TO_DRAW: usize = 2;
-    let state = "
-        ...
-        ...
-        ...";
-    let game = minimax::tictactoe::TicTacToeGame::from_state(state, Player::X);
-    let mut minimax = Minimax {
-        ..Default::default()
-    };
-
-    // const MAX_DEPTH: i32 = 4;
-    // const ALTERNATIVES_TO_DRAW: usize = 3;
-    // const MINIMAX_DEPTH: Option<u32> = Some(9);
+    // tic tac toe setup
+    // const MAX_DEPTH: i32 = 10;
+    // const ALTERNATIVES_TO_DRAW: usize = 2;
     // let state = "
-    // .......
-    // .O.X...
-    // .XOO...
-    // .OXOX..
-    // .OXOXX.
-    // .OOXXO.";
-    // let game = minimax::connect4::Connect4Game::from_state(state, None, Player::X);
+    //     ...
+    //     ...
+    //     ...";
+    // let game = minimax::tictactoe::TicTacToeGame::from_state(state, Player::X);
+    // let mut minimax = Minimax::new(MinimaxParams::default());
+
+    // connect 4 setup
+    const MAX_DEPTH: i32 = 4;
+    const ALTERNATIVES_TO_DRAW: usize = 3;
+    let mut minimax = Minimax::new(MinimaxParams {
+        max_depth: 9,
+        ..Default::default()
+    });
+    let state = "
+        .......
+        .O.X...
+        .XOO...
+        .OXOX..
+        .OXOXX.
+        .OOXXO.";
+    let game = minimax::connect4::Connect4Game::from_state(state, None, Player::X);
+
 
     // get the decision tree
     let decision_tree = minimax.minimax(&game);
@@ -48,6 +50,15 @@ fn main() -> std::io::Result<()> {
         MAX_DEPTH,
         ALTERNATIVES_TO_DRAW,
     );
+
+    match minimax.get_internal_stats() {
+        (total, last, cache) => {
+            info!(
+                "Stats: nodes_examined_total={}, nodes_examined_last_run={}, cache_size={}",
+                total, last, cache
+            );
+        }
+    }
 
     // print it to string
     let mut printer_context = PrinterContext::default();
