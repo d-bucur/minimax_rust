@@ -37,11 +37,13 @@ impl DecisionTreeNode {
 }
 
 // TODO make struct and keep around stuff like the cache and visit count
-// TOOD maybe use generic instead of dynamic dispatch
 // TODO extract params into struct with defaults
+// TOOD maybe use generic instead of dynamic dispatch
 pub fn minimax(game: &dyn MinimaxDriver, max_depth: Option<u32>) -> Rc<DecisionTreeNode> {
     let mut cache: HashMap<GameHash, Rc<DecisionTreeNode>> = HashMap::new();
-    _minimax(game, 0, 0.95, max_depth, 0.05, &mut cache, i32::MIN, i32::MAX)  // TODO suboptimal disabled for now as it's breaking the pruning
+    // TODO suboptimal breaks the pruning if too high, and way slower
+    // disabling depth factor is also slightly faster
+    _minimax(game, 0, 0.99, max_depth, 0.0, &mut cache, i32::MIN, i32::MAX)  
 }
 
 // TODO profile with struct values instead of passing constant params

@@ -15,7 +15,7 @@ fn tictactoe_benchmark(c: &mut Criterion) {
 }
 
 fn connect_benchmark(c: &mut Criterion) {
-    c.bench_function("tictactoe_full_game", |b| {
+    c.bench_function("connect4_full_game", |b| {
         b.iter(|| {
             let board_str = "
                 .......
@@ -25,7 +25,7 @@ fn connect_benchmark(c: &mut Criterion) {
                 .......
                 .......";
             let game = Connect4Game::from_state(board_str, None, Player::X);
-            minimax(black_box(&game), Some(6));
+            minimax(black_box(&game), Some(12));
         })
     });
 }

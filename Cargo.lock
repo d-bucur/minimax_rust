@@ -3502,6 +3502,8 @@ version = "0.1.0"
 dependencies = [
  "graphviz-rust",
  "minimax",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

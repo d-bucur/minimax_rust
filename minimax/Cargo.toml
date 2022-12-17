@@ -9,13 +9,13 @@ readme = "README.md"
 rand = "0.8.5"
 itertools = "0.10.5"
 tracing = "0.1.37"
-derivative = "2.2.0"
+derivative = "2.2.0"  # TODO not used
 
 [dev-dependencies]
 rstest = "0.16.0"
 criterion = "0.4.0"
 iai = "0.1.1"
-tracing-subscriber = "0.3.1" # probably not needed in a library
+tracing-subscriber = "0.3.1" # TODO probably not needed in a library
 
 [[bench]]
 name = "minimax_bench_criterion"
