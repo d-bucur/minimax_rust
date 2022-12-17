@@ -237,6 +237,59 @@ mod tests {
     }
 
     #[rstest]
+    fn test_winning_moves_three_turns() {
+        let state = "
+        X..
+        .O.
+        O.X";
+        let game = TicTacToeGame::from_state(state, Player::X);
+        let (final_game, moves) = play(game);
+        assert_eq!(moves, 3);
+        assert_eq!(final_game.get_winner(), Player::X);
+
+        let state = "
+        X.O
+        .O.
+        ..X";
+        let game = TicTacToeGame::from_state(state, Player::X);
+        let (final_game, moves) = play(game);
+        assert_eq!(moves, 3);
+        assert_eq!(final_game.get_winner(), Player::X);
+    }
+    
+    #[rstest]
+    fn test_doesnt_make_noob_mistake() {
+        let state = "
+        X..
+        .O.
+        ..X";
+        let game = TicTacToeGame::from_state(state, Player::O);
+        let (final_game, _moves) = play(game);
+        assert_eq!(final_game.get_winner(), Player::None);
+    }
+    
+    #[rstest]
+    fn test_punishes_noob_openings() {
+        let state = "
+        XO.
+        ...
+        ...";
+        let game = TicTacToeGame::from_state(state, Player::X);
+        let (final_game, moves) = play(game);
+        assert_eq!(moves, 5);
+        assert_eq!(final_game.get_winner(), Player::X);
+
+        let state = "
+        X..
+        ...
+        O..";
+        let game = TicTacToeGame::from_state(state, Player::X);
+        let (final_game, moves) = play(game);
+        assert_eq!(moves, 5);
+        assert_eq!(final_game.get_winner(), Player::X);
+    }
+
+    #[rstest]
     fn test_fastest_win() {
         let state = "
         OOX
