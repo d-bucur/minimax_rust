@@ -21,19 +21,19 @@ fn main() -> std::io::Result<()> {
     // let mut minimax = Minimax::new(MinimaxParams::default());
 
     // connect 4 setup
-    const MAX_DEPTH: i32 = 7;
-    const ALTERNATIVES_TO_DRAW: usize = 0;
+    const MAX_DEPTH: i32 = 3;
+    const ALTERNATIVES_TO_DRAW: usize = 10;
     let mut minimax = Minimax::new(MinimaxParams {
-        max_depth: 7,
+        max_depth: 5,
         ..Default::default()
     });
-        let state = "
-        .......
-        .......
-        ..X....
-        X.O....
-        O.X....
-        XXOOOXO";
+    let state = "
+    . . . . . . .
+    O . . . . . .
+    X . . . . . .
+    X X . . . . .
+    X X . O X . O
+    O O O X X O O";
     let game = minimax::connect4::Connect4Game::from_state(state, None, Player::X);
 
     // get the decision tree
@@ -87,7 +87,7 @@ fn graph_tree(
         max_depth,
         &mut 0,
         alternatives_to_draw,
-        4,  // pretty hacky, doesn't work if pruned
+        100, // pretty hacky, doesn't work if pruned
     );
 }
 
@@ -99,7 +99,7 @@ fn graph_node(
     max_depth: i32,
     node_id: &mut i32,
     alternatives_to_draw: usize,
-    draw_all_at_depth: i32
+    draw_all_at_depth: i32,
 ) -> Option<NodeId> {
     if depth > max_depth {
         return None;
@@ -109,8 +109,14 @@ fn graph_node(
         graph,
         format!("node_{}_{}", depth, node_id),
         format!(
-            "sc: {} de: {}\n{:?}\na: {} b: {}",
-            decision_tree.score, depth, game, decision_tree.alfa, decision_tree.beta
+            "sc: {} de: {}\nest: {} ord: {}\n{:?}\na: {} b: {}",
+            decision_tree.score,
+            depth,
+            decision_tree.estimate,
+            decision_tree.visit_order,
+            game,
+            decision_tree.alfa,
+            decision_tree.beta
         ),
         color_node.into(),
     );
@@ -126,28 +132,31 @@ fn graph_node(
         .iter()
         .map(|(p, t)| (p.clone(), t.clone()))
         .collect();
-    all_moves.sort_by_key(|(_, n)| -n.score * score_factor);
-
+    // all_moves.sort_by_key(|(_, n)| -n.estimate * score_factor); // already sorted by eval function, not needed anymore
+    all_moves.sort_by_key(|(_, n)| n.visit_order); // order nodes by their visit order
+    
     // always get best move in the front of the list
     // if there are multiple moves with the same highest score, the selected one might not be plotted
     // not the most efficient way to do it, but this is not a hotspot
-    let best_move_idx = all_moves
-        .iter()
-        .position(|m| m.0 == decision_tree.best_move.unwrap())
-        .unwrap();
-    if best_move_idx != 0 {
-        all_moves.rotate_right(1);
-        let new_best_idx = (best_move_idx + 1) % all_moves.len();
-        all_moves.swap(0, new_best_idx);
-    }
+    // let best_move_idx = all_moves
+    //     .iter()
+    //     .position(|m| m.0 == decision_tree.best_move.unwrap())
+    //     .unwrap();
+    // if best_move_idx != 0 {
+    //     all_moves.rotate_right(1);
+    //     let new_best_idx = (best_move_idx + 1) % all_moves.len();
+    //     all_moves.
+    //     all_moves.swap(0, new_best_idx);
+    // }
     let selected_alternatives = if draw_all_at_depth == depth {
         1000
     } else {
         alternatives_to_draw
     };
 
-    // draw nodes ordered by score
+    // draw nodes
     for (m, tree_node) in all_moves.into_iter().take(1 + selected_alternatives) {
+        // TODO should always draw selected move
         let new_game = game.apply_move(m);
         let child_node = graph_node(
             graph,
@@ -157,7 +166,7 @@ fn graph_node(
             max_depth,
             node_id,
             alternatives_to_draw,
-            draw_all_at_depth
+            draw_all_at_depth,
         );
         let (color_edge, is_heavy) = if decision_tree.best_move.unwrap() == m {
             (get_player_color(game.get_current_player()), true)

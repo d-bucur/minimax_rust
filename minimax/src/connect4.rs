@@ -1,4 +1,8 @@
-use std::{fmt::Debug, iter::repeat};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::Debug,
+    iter::repeat,
+};
 
 use crate::{game::*, minimax::*};
 
@@ -73,6 +77,7 @@ type BoardType = [Player; WIDTH * HEIGHT];
 
 trait BoardTypeAccess {
     fn get(&self, i: usize, j: usize) -> Player;
+    fn get_safe(&self, i: isize, j: isize) -> Option<Player>;
     fn set(&mut self, i: usize, j: usize, val: Player);
 }
 
@@ -83,6 +88,13 @@ impl BoardTypeAccess for BoardType {
 
     fn set(&mut self, i: usize, j: usize, val: Player) {
         self[i * WIDTH + j] = val
+    }
+
+    fn get_safe(&self, i: isize, j: isize) -> Option<Player> {
+        if i < 0 || i >= WIDTH as isize || j < 0 || j >= HEIGHT as isize {
+            return None;
+        }
+        Some(self.get(i as usize, j as usize))
     }
 }
 
@@ -150,23 +162,155 @@ impl MinimaxDriver for Connect4Game {
     }
 
     fn evaluate_score(&self) -> EvaluationScore {
-        match self.get_winner() {
-            Player::None => EvaluationScore {
-                score: 0,
-                // Not sure that it's not terminal, could be a draw, but since the minimax function
-                // will iterate over possible moves this shouldn't be an issue 
-                is_terminal: false,
-            },
-            Player::X => EvaluationScore {
-                score: 1000,
-                is_terminal: true,
-            },
-            Player::O => EvaluationScore {
-                score: -1000,
-                is_terminal: true,
-            },
+        const MAX_SCORE: i32 = 1000;
+        // TODO this part is horrible, should refactor after it's working
+        // this should replace winner function when done
+        let mut score = 0;
+        let mut threats: [HashSet<Move>; 3] = Default::default();
+
+        let direction_iterators: Vec<Box<dyn Iterator<Item = ((isize, isize), (isize, isize))>>> = vec![
+            // sweep right
+            Box::new(
+                (0..HEIGHT as isize)
+                    .rev()
+                    .zip(repeat(0))
+                    .zip(repeat((0, 1))),
+            ),
+            // sweep up
+            Box::new(
+                repeat(HEIGHT as isize - 1)
+                    .zip(0..WIDTH as isize)
+                    .zip(repeat((-1, 0))),
+            ),
+            // sweep diagonal \
+            Box::new(
+                repeat(HEIGHT as isize - 1)
+                    .zip(1..WIDTH as isize)
+                    // add some higher positions manually
+                    .chain(vec![(4,6),(3,6),(2,6),(1,6)])
+                    .zip(repeat((-1, -1))),
+            ),
+            // sweep diagonal /
+            Box::new(
+                repeat(HEIGHT as isize - 1)
+                    .zip(1..WIDTH as isize)
+                    // add some higher positions manually
+                    .chain(vec![(4,0),(3,0),(2,0),(1,0)])
+                    .zip(repeat((-1, 1))),
+            ),
+        ];
+
+        for it in direction_iterators {
+            for ((i, j), dir) in it {
+                // search for adjacent pieces in a sliding window of 4
+                let mut window = WindowCount::default();
+                let mut k = 0;
+                let mut empties: HashSet<Move> = Default::default();
+                while let Some(p) = self.board.get_safe(i + k * dir.0, j + k * dir.1) {
+                    window.count[p as usize] += 1;
+                    if p == Player::None {
+                        empties.insert(((i + k * dir.0) as usize, (j + k * dir.1) as usize));
+                    }
+
+                    k += 1;
+                    if k > 4 {
+                        let exit_pos = (
+                            (i + (k - 5) * dir.0) as usize,
+                            (j + (k - 5) * dir.1) as usize,
+                        );
+                        let exit_val = self.board.get(exit_pos.0, exit_pos.1);
+                        if exit_val == Player::None {
+                            empties.remove(&exit_pos);
+                        }
+                        window.count[exit_val as usize] -= 1;
+                    }
+
+                    if window.count[Player::X as usize] == 3
+                        && window.count[Player::None as usize] == 1
+                    {
+                        let p = empties.iter().next().unwrap();
+                        threats[Player::X as usize].insert(p.clone());
+                    } else if window.count[Player::X as usize] == 4 {
+                        return EvaluationScore {
+                            score: MAX_SCORE,
+                            is_terminal: true,
+                        };
+                    }
+                    if window.count[Player::O as usize] == 3
+                        && window.count[Player::None as usize] == 1
+                    {
+                        let p = empties.iter().next().unwrap();
+                        threats[Player::O as usize].insert(p.clone());
+                    } else if window.count[Player::O as usize] == 4 {
+                        return EvaluationScore {
+                            score: -MAX_SCORE,
+                            is_terminal: true,
+                        };
+                    }
+                }
+                
+            }
+            score += threats[Player::X as usize].iter().count() as i32 * 10;
+            score -= threats[Player::O as usize].iter().count() as i32 * 10;
+
+            // let next_move_threats_x = threats[Player::X as usize]
+            //     .iter()
+            //     .filter(
+            //         |(i, j)| match self.board.get_safe(*i as isize, *j as isize) {
+            //             Some(Player::X) | Some(Player::O) | None => true,
+            //             _ => false,
+            //         },
+            //     )
+            //     .count();
+            // let next_move_threats_y = threats[Player::X as usize]
+            //     .iter()
+            //     .filter(
+            //         |(i, j)| match self.board.get_safe(*i as isize, *j as isize) {
+            //             Some(Player::X) | Some(Player::O) | None => true,
+            //             _ => false,
+            //         },
+            //     )
+            //     .count();
+            // if next_move_threats_x > 1 {
+            //     score = MAX_SCORE;
+            // } else {
+            //     score += threats[Player::X as usize].iter().count() as i32 * 10;
+            // }
+            // if next_move_threats_y > 1 {
+            //     score = -MAX_SCORE;
+            // } else {
+            //     score -= threats[Player::O as usize].iter().count() as i32 * 10;
+            // }
+        }
+        EvaluationScore {
+            score: score,
+            is_terminal: false,
         }
     }
+
+    // fn evaluate_score_no_heuristic(&self) -> EvaluationScore {
+    //     match self.get_winner() {
+    //         Player::None => EvaluationScore {
+    //             score: 0,
+    //             // Not sure that it's not terminal, could be a draw, but since the minimax function
+    //             // will iterate over possible moves this shouldn't be an issue
+    //             is_terminal: false,
+    //         },
+    //         Player::X => EvaluationScore {
+    //             score: 1000,
+    //             is_terminal: true,
+    //         },
+    //         Player::O => EvaluationScore {
+    //             score: -1000,
+    //             is_terminal: true,
+    //         },
+    //     }
+    // }
+}
+
+#[derive(Default)]
+struct WindowCount {
+    count: [usize; 3],
 }
 
 impl Debug for Connect4Game {
@@ -177,7 +321,11 @@ impl Debug for Connect4Game {
             }
             writeln!(f)?;
         }
-        write!(f, "nx: {:?}\nls: {:?}", &self.current_player, &self.last_move)
+        write!(
+            f,
+            "nx: {:?}\nls: {:?}",
+            &self.current_player, &self.last_move
+        )
     }
 }
 
@@ -368,5 +516,19 @@ mod tests {
         let (final_game, moves) = play(game, 9);
         assert_eq!(final_game.get_winner(), Player::X);
         assert_eq!(moves, 9);
+    }
+
+    #[test]
+    fn test_score() {
+        let state = "
+        . . . . . . .
+        O . . . . . .
+        X . . . . . .
+        X X . . . . .
+        X X X O X . O
+        O O O X X O O";
+        let game = Connect4Game::from_state(state, Some((4, 5)), crate::game::Player::X);
+        let score = game.evaluate_score();
+        assert_eq!(score.score, 1000);
     }
 }

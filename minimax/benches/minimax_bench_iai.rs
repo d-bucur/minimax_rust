@@ -13,7 +13,7 @@ fn tictactoe_benchmark() {
 
 fn connect4_benchmark() {
     let mut minimax = Minimax::new(MinimaxParams {
-        max_depth: 7,
+        max_depth: 10,
         ..Default::default()
     });
     let board_str = "

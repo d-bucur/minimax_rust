@@ -1,5 +1,6 @@
 use std::{collections::HashMap, rc::Rc};
 
+use itertools::Itertools;
 use tracing::*;
 
 use crate::game::*;
@@ -14,19 +15,16 @@ pub struct EvaluationScore {
 }
 
 pub trait MinimaxDriver: core::fmt::Debug {
-    fn get_winner(&self) -> Player; // TODO remove from trait, not needed anymore
-
     fn evaluate_score(&self) -> EvaluationScore;
-
+    // TODO maybe iterator is not necessary here, or can be simplified with impl? need to understand difference between impl and dyn in this case
     fn get_possible_moves(&self) -> Box<dyn Iterator<Item = Move> + '_>; // TODO should move into evaluation to avoid doing it twice
-
+    // TODO replace return type with impl MinimaxDriver?
     fn apply_move(&self, next_move: Move) -> Box<dyn MinimaxDriver>; // TODO move types should be specific for each game. Can probably use generics here
-
     fn get_hash(&self) -> GameHash; // TODO can't implement Hash because it is not object safe
-
     fn get_current_player(&self) -> Player; // TODO only needed to know if maximizing player or minimizing player. maybe better to abstract this somehow?
 
-    fn has_ended(&self) -> bool; // TODO not used at all?
+    fn has_ended(&self) -> bool; // TODO only used in clients, should be implemented on game separately
+    fn get_winner(&self) -> Player; // TODO remove from trait, not needed anymore
 }
 
 #[derive(Default)]
@@ -34,9 +32,11 @@ pub struct DecisionTreeNode {
     pub score: Score,
     pub moves: HashMap<Move, NodeType>, // TODO can moves be a vector instead?
     pub best_move: Option<Move>,
-    // TODO only for debug
+    // Only for debug
     pub alfa: Score,
     pub beta: Score,
+    pub estimate: Score,
+    pub visit_order: u128,
 }
 
 impl DecisionTreeNode {
@@ -92,12 +92,13 @@ impl Minimax {
 }
 
 impl Minimax {
-    // TOOD maybe use generic instead of dynamic dispatch
+    // TODO maybe use generic instead of dynamic dispatch
+    // or maybe can use impl MinimaxDriver?
     pub fn minimax(&mut self, game: &dyn MinimaxDriver) -> NodeType {
         // TODO suboptimal breaks the pruning if too high, and way slower
         // disabling depth factor is also slightly faster
         let previous_total = self.nodes_examined_total;
-        let res = self._minimax(game, 0, Score::MIN, Score::MAX);
+        let res = self._minimax(game, 0, Score::MIN, Score::MAX, game.evaluate_score());
         self.nodes_examined_last_run = self.nodes_examined_total - previous_total;
         res
     }
@@ -108,7 +109,11 @@ impl Minimax {
         current_depth: u32,
         mut alfa: Score, // best for maximizing player
         mut beta: Score, // best for minimizing player
+        score_eval: EvaluationScore,
     ) -> NodeType {
+        let current_node_idx = self.nodes_examined_total;
+        self.nodes_examined_total += 1;
+
         let cache_key = game.get_hash();
         // TODO caching breaks with pruning, not sure how to solve this. see test_doesnt_make_noob_mistake
         // either make caching optional, as it seems to work better than pruning for tictactoe
@@ -117,26 +122,36 @@ impl Minimax {
             return self.cache.get(&cache_key).unwrap().clone();
         }
 
-        let score_eval = game.evaluate_score();
         if score_eval.is_terminal || current_depth >= self.params.max_depth {
             let node = Rc::new(DecisionTreeNode {
                 score: score_eval.score,
+                estimate: score_eval.score,
+                visit_order: current_node_idx,
+                // TODO probably should set alfa beta here
                 ..Default::default()
             });
             self.cache.insert(cache_key, node.clone());
             return node;
         }
+        
+        let score_multiplier = game.get_current_player().score_multiplier();
+        let new_states = game
+            .get_possible_moves()
+            .map(|m| {
+                let new_move = game.apply_move(m);
+                let score = new_move.evaluate_score();
+                (m, new_move, score)
+            })
+            .sorted_by_key(|(_, _, score)| -score_multiplier * score.score);
 
-        let new_states = game.get_possible_moves().map(|m| (m, game.apply_move(m)));
         let mut best_move = None;
         let mut best_value = 0;
-        let mut suboptimal_value = 0.;
+        let mut suboptimal_value = 0.; // TODO suboptimal doesn't work well with pruning, should probably remove
         let mut analized_moves = 0;
-        let score_multiplier = game.get_current_player().score_multiplier();
         let mut child_results_map: HashMap<(usize, usize), NodeType> = Default::default();
 
-        for (pos, game) in new_states {
-            let node_eval = self._minimax(game.as_ref(), current_depth + 1, alfa, beta);
+        for (pos, game, evaluation) in new_states {
+            let node_eval = self._minimax(game.as_ref(), current_depth + 1, alfa, beta, evaluation);
             if node_eval.score * score_multiplier >= best_value || best_move.is_none() {
                 best_move = Some(pos);
                 best_value = node_eval.score * score_multiplier;
@@ -160,7 +175,6 @@ impl Minimax {
             suboptimal_value /= analized_moves as f32;
         }
 
-        self.nodes_examined_total += 1;
 
         let score_final = if analized_moves == 0 {
             // could this break when using heuristics?
@@ -178,6 +192,8 @@ impl Minimax {
             moves: child_results_map,
             alfa: alfa,
             beta: beta,
+            estimate: score_eval.score,
+            visit_order: current_node_idx,
         });
         debug!("Minimax in node: \n{:?}", game);
         debug!("Node: {:?}", node);

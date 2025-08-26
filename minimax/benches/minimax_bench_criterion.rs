@@ -25,7 +25,7 @@ fn connect_benchmark(c: &mut Criterion) {
         .......";
     let game = Connect4Game::from_state(board_str, None, Player::X);
     let mut minimax = Minimax::new(MinimaxParams {
-        max_depth: 12,
+        max_depth: 10,
         ..Default::default()
     });
     c.bench_function("connect4_full_game", |b| {

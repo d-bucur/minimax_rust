@@ -107,7 +107,7 @@ impl MinimaxDriver for TicTacToeGame {
             Player::None => EvaluationScore {
                 score: 0,
                 // Not sure that it's not terminal, could be a draw, but since the minimax function
-                // will iterate over possible moves this shouldn't be an issue 
+                // will iterate over possible moves this shouldn't be an issue
                 is_terminal: false,
             },
             Player::X => EvaluationScore {
@@ -256,7 +256,7 @@ mod tests {
         assert_eq!(moves, 3);
         assert_eq!(final_game.get_winner(), Player::X);
     }
-    
+
     #[rstest]
     fn test_doesnt_make_noob_mistake() {
         let state = "
@@ -267,7 +267,7 @@ mod tests {
         let (final_game, _moves) = play(game);
         assert_eq!(final_game.get_winner(), Player::None);
     }
-    
+
     #[rstest]
     fn test_punishes_noob_openings() {
         let state = "
